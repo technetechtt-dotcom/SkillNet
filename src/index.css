@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+  :root {
+    /* Warm Professional + Playful Social Palette */
+    --color-primary: #0D9488; /* teal-600 */
+    --color-primary-dark: #0F766E; /* teal-700 */
+    --color-primary-light: #CCFBF1; /* teal-100 */
+    --color-secondary: #F97316; /* orange-500 */
+    --color-secondary-dark: #EA580C; /* orange-600 */
+    --color-accent: #8B5CF6; /* violet-500 */
+    --color-background: #FAFAF8; /* warm off-white */
+    --color-surface: #FFFFFF;
+    --color-text-primary: #1A1A2E; /* warm near-black */
+    --color-text-secondary: #6B7280; /* warm gray */
+    --color-success: #10B981; /* emerald-500 */
+    --color-error: #F43F5E; /* rose-500 */
+    --color-warning: #F59E0B; /* amber-500 */
+    --color-info: #6366F1; /* indigo-500 */
+    --color-border: #E8E8E5; /* warm border */
+  }
+  .dark {
+    --color-primary: #14B8A6; /* teal-500 */
+    --color-primary-dark: #0D9488; /* teal-600 */
+    --color-primary-light: #134E4A; /* teal-900 */
+    --color-secondary: #FB923C; /* orange-400 */
+    --color-secondary-dark: #F97316; /* orange-500 */
+    --color-accent: #A78BFA; /* violet-400 */
+    --color-background: #121218; /* warm dark */
+    --color-surface: #1E1E26; /* warm surface */
+    --color-text-primary: #F5F5F4; /* warm white */
+    --color-text-secondary: #A1A1AA; /* warm gray */
+    --color-border: #2E2E38; /* dark warm border */
+    --color-success: #34D399; /* emerald-400 */
+    --color-error: #FB7185; /* rose-400 */
+  }
+  html {
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-[var(--color-background)] text-[var(--color-text-primary)] antialiased;
+    overscroll-behavior-y: none;
+  }
+}
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+}
