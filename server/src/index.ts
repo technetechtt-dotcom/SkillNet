@@ -8,6 +8,7 @@ import videoRoutes from './routes/videos.js';
 import notificationRoutes from './routes/notifications.js';
 import walletRoutes from './routes/wallet.js';
 import chatRoutes from './routes/chats.js';
+import invoiceRoutes from './routes/invoices.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,6 +27,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });

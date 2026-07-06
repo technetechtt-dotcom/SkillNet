@@ -143,6 +143,22 @@ export interface ApiMessage {
   isRead: boolean;
 }
 
+export interface ApiInvoice {
+  id: string;
+  type: 'invoice' | 'quote';
+  number: string;
+  clientName: string;
+  amount: number;
+  formattedAmount: string;
+  currency: string;
+  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  date: string;
+  dueDate: string | null;
+  notes: string | null;
+  lineItems: { description: string; quantity: number; rate: number }[];
+  createdAt: string;
+}
+
 export const api = {
   auth: {
     login: (phone: string, password: string) =>
@@ -166,6 +182,8 @@ export const api = {
   users: {
     me: () => request<ApiUser>('/users/me'),
     get: (id: string) => request<ApiUser>(`/users/${id}`),
+    search: (q?: string) =>
+      request<ApiUser[]>(`/users/search${q ? `?q=${encodeURIComponent(q)}` : ''}`),
     update: (data: Partial<Pick<ApiUser, 'name' | 'location' | 'bio' | 'avatar'>>) =>
       request<ApiUser>('/users/me', {
         method: 'PATCH',
@@ -269,6 +287,29 @@ export const api = {
       request<{ chatId: string }>('/chats/start', {
         method: 'POST',
         body: JSON.stringify({ userId }),
+      }),
+  },
+
+  invoices: {
+    list: () => request<ApiInvoice[]>('/invoices'),
+    get: (id: string) => request<ApiInvoice>(`/invoices/${id}`),
+    create: (data: {
+      clientName: string;
+      type?: 'invoice' | 'quote';
+      amount: number;
+      dueDate?: string;
+      notes?: string;
+      lineItems?: { description: string; quantity: number; rate: number }[];
+      status?: string;
+    }) =>
+      request<ApiInvoice>('/invoices', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateStatus: (id: string, status: string) =>
+      request<ApiInvoice>(`/invoices/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
       }),
   },
 };

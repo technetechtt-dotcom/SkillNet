@@ -191,6 +191,46 @@ async function seed() {
     },
   ]);
 
+  await db.insert(schema.invoices).values([
+    {
+      userId: worker1.id,
+      clientName: 'TechHub Ltd',
+      type: 'invoice',
+      number: 'INV-2026-001',
+      amount: 45000,
+      status: 'paid',
+      dueDate: new Date('2026-03-15'),
+      lineItems: [
+        { description: 'Labor - Plumbing Repair', quantity: 1, rate: 27000 },
+        { description: 'Materials & Parts', quantity: 1, rate: 18000 },
+      ],
+    },
+    {
+      userId: worker1.id,
+      clientName: 'Grace Wanjiku',
+      type: 'invoice',
+      number: 'INV-2026-002',
+      amount: 15000,
+      status: 'sent',
+      dueDate: new Date('2026-03-19'),
+      lineItems: [
+        { description: 'Electrical inspection', quantity: 1, rate: 15000 },
+      ],
+    },
+    {
+      userId: worker1.id,
+      clientName: 'David Omondi',
+      type: 'quote',
+      number: 'QUO-2026-001',
+      amount: 120000,
+      status: 'draft',
+      dueDate: new Date('2026-03-22'),
+      lineItems: [
+        { description: 'Full house wiring', quantity: 1, rate: 120000 },
+      ],
+    },
+  ]);
+
   console.log('Seed complete!');
   console.log('');
   console.log('Demo accounts (password: password123):');

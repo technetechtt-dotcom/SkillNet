@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './context/AuthContext';
+import { useAppNavigation } from './hooks/useAppNavigation';
+import { Screen } from './navigation/screenRoutes';
 import { BottomNav, TabType } from './components/ui/BottomNav';
 import { OnboardingSlides } from './pages/OnboardingSlides';
 import { OnboardingWelcome } from './pages/OnboardingWelcome';
@@ -49,46 +52,8 @@ import { NewMessage } from './pages/NewMessage';
 import { CallScreen } from './pages/CallScreen';
 import { SavedJobs } from './pages/SavedJobs';
 import { SkillHub } from './pages/SkillHub';
-type Screen =
-'onboarding-slides' |
-'welcome' |
-'sign-in' |
-'register' |
-'profile-setup' |
-'main' |
-'job-detail' |
-'chat-conversation' |
-'video-upload' |
-'notifications' |
-'rating-review' |
-'wallet-withdraw' |
-'skill-swap' |
-'job-hubs' |
-'certifications' |
-'edit-profile' |
-'settings' |
-'transaction-detail' |
-'worker-profile' |
-'skills-management' |
-'invoice-list' |
-'create-invoice' |
-'invoice-detail' |
-'stories' |
-'skill-challenges' |
-'explore' |
-'create-duet' |
-'share-profile' |
-'create-job' |
-'apply-job' |
-'impact-dashboard' |
-'government-hub' |
-'program-detail' |
-'settings-detail' |
-'wallet-action' |
-'new-message' |
-'call-screen' |
-'saved-jobs' |
-'wallet';
+import { api } from './lib/api';
+
 export function App() {
   const { isDark, toggleTheme } = useTheme();
   const { isAuthenticated, isLoading, login, register, logout } = useAuth();
@@ -114,11 +79,45 @@ export function App() {
   );
   const [isVideoCall, setIsVideoCall] = useState(false);
 
+  const { goTo } = useAppNavigation({
+    isAuthenticated,
+    currentScreen,
+    activeTab,
+    selectedJobId,
+    selectedChatId,
+    selectedWorkerId,
+    selectedInvoiceId,
+    selectedProgramId,
+    selectedSettingsPage,
+    selectedTransactionId,
+    walletActionType,
+    isVideoCall,
+    setCurrentScreen,
+    setActiveTab,
+    setSelectedJobId,
+    setSelectedChatId,
+    setSelectedWorkerId,
+    setSelectedInvoiceId,
+    setSelectedProgramId,
+    setSelectedSettingsPage,
+    setSelectedTransactionId,
+    setWalletActionType,
+    setIsVideoCall,
+  });
+
+  const { data: chats = [] } = useQuery({
+    queryKey: ['chats'],
+    queryFn: () => api.chats.list(),
+    enabled: isAuthenticated,
+  });
+
+  const unreadMessages = chats.reduce((sum, c) => sum + c.unreadCount, 0);
+
   useEffect(() => {
     if (!isLoading && isAuthenticated && currentScreen === 'onboarding-slides') {
-      setCurrentScreen('main');
+      goTo('main');
     }
-  }, [isLoading, isAuthenticated, currentScreen]);
+  }, [isLoading, isAuthenticated, currentScreen, goTo]);
 
   const handleRegister = async (skills: { name: string; icon: string }[]) => {
     if (!registrationDraft) throw new Error('Missing registration data');
@@ -130,19 +129,16 @@ export function App() {
   };
 
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-    setCurrentScreen('main');
+    goTo('main', { tab });
   };
   const openJobDetail = (jobId: string) => {
-    setSelectedJobId(jobId);
-    setCurrentScreen('job-detail');
+    goTo('job-detail', { jobId });
   };
   const openChat = (chatId: string) => {
-    setSelectedChatId(chatId);
-    setCurrentScreen('chat-conversation');
+    goTo('chat-conversation', { chatId });
   };
   const goBack = () => {
-    setCurrentScreen('main');
+    goTo('main');
   };
   // Render the active tab content
   const renderMainTab = () => {
@@ -150,38 +146,37 @@ export function App() {
       case 'home':
         return (
           <HomeFeed
-            onUploadVideo={() => setCurrentScreen('video-upload')}
-            onNotifications={() => setCurrentScreen('notifications')}
+            onUploadVideo={() => goTo('video-upload')}
+            onNotifications={() => goTo('notifications')}
             onSearch={() => {
-              setActiveTab('jobs');
-              setCurrentScreen('main');
+              goTo('main', { tab: 'jobs' });
             }}
-            onStories={() => setCurrentScreen('stories')}
-            onExplore={() => setCurrentScreen('explore')}
-            onChallenges={() => setCurrentScreen('skill-challenges')}
-            onDuet={() => setCurrentScreen('create-duet')} />);
+            onStories={() => goTo('stories')}
+            onExplore={() => goTo('explore')}
+            onChallenges={() => goTo('skill-challenges')}
+            onDuet={() => goTo('create-duet')} />);
 
 
       case 'jobs':
         return (
           <JobMarketplace
             onJobClick={openJobDetail}
-            onSkillSwap={() => setCurrentScreen('skill-swap')}
-            onJobHubs={() => setCurrentScreen('job-hubs')}
-            onCreateJob={() => setCurrentScreen('create-job')}
-            onSavedJobs={() => setCurrentScreen('saved-jobs')} />);
+            onSkillSwap={() => goTo('skill-swap')}
+            onJobHubs={() => goTo('job-hubs')}
+            onCreateJob={() => goTo('create-job')}
+            onSavedJobs={() => goTo('saved-jobs')} />);
 
 
       case 'skill-hub':
         return (
           <SkillHub
-            onChallenges={() => setCurrentScreen('skill-challenges')}
-            onCertifications={() => setCurrentScreen('certifications')}
-            onSkillSwap={() => setCurrentScreen('skill-swap')}
-            onSkillsManagement={() => setCurrentScreen('skills-management')}
+            onChallenges={() => goTo('skill-challenges')}
+            onCertifications={() => goTo('certifications')}
+            onSkillSwap={() => goTo('skill-swap')}
+            onSkillsManagement={() => goTo('skills-management')}
             onProgramClick={(id) => {
               setSelectedProgramId(id);
-              setCurrentScreen('program-detail');
+              goTo('program-detail', { programId: id });
             }} />);
 
 
@@ -189,7 +184,7 @@ export function App() {
         return (
           <ChatList
             onChatClick={openChat}
-            onNewMessage={() => setCurrentScreen('new-message')} />);
+            onNewMessage={() => goTo('new-message')} />);
 
 
       case 'profile':
@@ -197,14 +192,14 @@ export function App() {
           <SkillProfile
             onToggleTheme={toggleTheme}
             isDark={isDark}
-            onCertifications={() => setCurrentScreen('certifications')}
-            onEditProfile={() => setCurrentScreen('edit-profile')}
-            onUploadVideo={() => setCurrentScreen('video-upload')}
-            onAddSkill={() => setCurrentScreen('skills-management')}
-            onSettings={() => setCurrentScreen('settings')}
-            onShareProfile={() => setCurrentScreen('share-profile')}
-            onImpactDashboard={() => setCurrentScreen('impact-dashboard')}
-            onWallet={() => setCurrentScreen('wallet')} />);
+            onCertifications={() => goTo('certifications')}
+            onEditProfile={() => goTo('edit-profile')}
+            onUploadVideo={() => goTo('video-upload')}
+            onAddSkill={() => goTo('skills-management')}
+            onSettings={() => goTo('settings')}
+            onShareProfile={() => goTo('share-profile')}
+            onImpactDashboard={() => goTo('impact-dashboard')}
+            onWallet={() => goTo('wallet')} />);
 
 
       default:
@@ -225,21 +220,21 @@ export function App() {
     switch (currentScreen) {
       case 'onboarding-slides':
         return (
-          <OnboardingSlides onComplete={() => setCurrentScreen('welcome')} />);
+          <OnboardingSlides onComplete={() => goTo('welcome')} />);
 
       case 'welcome':
         return (
           <OnboardingWelcome
-            onNext={() => setCurrentScreen('register')}
-            onSignIn={() => setCurrentScreen('sign-in')} />);
+            onNext={() => goTo('register')}
+            onSignIn={() => goTo('sign-in')} />);
 
 
       case 'sign-in':
         return (
           <SignIn
-            onBack={() => setCurrentScreen('welcome')}
-            onSignIn={() => setCurrentScreen('main')}
-            onCreateAccount={() => setCurrentScreen('register')}
+            onBack={() => goTo('welcome')}
+            onSignIn={() => goTo('main')}
+            onCreateAccount={() => goTo('register')}
             onLogin={login} />);
 
 
@@ -248,16 +243,16 @@ export function App() {
           <OnboardingRegister
             onNext={(draft) => {
               setRegistrationDraft(draft);
-              setCurrentScreen('profile-setup');
+              goTo('profile-setup');
             }}
-            onBack={() => setCurrentScreen('welcome')} />);
+            onBack={() => goTo('welcome')} />);
 
 
       case 'profile-setup':
         return (
           <OnboardingProfileSetup
-            onComplete={() => setCurrentScreen('main')}
-            onBack={() => setCurrentScreen('register')}
+            onComplete={() => goTo('main')}
+            onBack={() => goTo('register')}
             onRegister={handleRegister} />);
 
 
@@ -268,7 +263,7 @@ export function App() {
             <BottomNav
               activeTab={activeTab}
               onTabChange={handleTabChange}
-              unreadMessages={3} />
+              unreadMessages={unreadMessages} />
             
           </div>);
 
@@ -277,10 +272,9 @@ export function App() {
           <JobDetail
             jobId={selectedJobId || 'j1'}
             onBack={goBack}
-            onApplyClick={() => setCurrentScreen('apply-job')}
+            onApplyClick={() => goTo('apply-job', { jobId: selectedJobId || undefined })}
             onEmployerClick={(id) => {
-              setSelectedWorkerId(id);
-              setCurrentScreen('worker-profile');
+              goTo('worker-profile', { workerId: id });
             }} />);
 
 
@@ -290,8 +284,10 @@ export function App() {
             chatId={selectedChatId || 'c1'}
             onBack={goBack}
             onCall={(video) => {
-              setIsVideoCall(video);
-              setCurrentScreen('call-screen');
+              goTo('call-screen', {
+                chatId: selectedChatId || undefined,
+                isVideoCall: video,
+              });
             }} />);
 
 
@@ -304,8 +300,7 @@ export function App() {
             onJobClick={openJobDetail}
             onChatClick={openChat}
             onWorkerClick={(id) => {
-              setSelectedWorkerId(id);
-              setCurrentScreen('worker-profile');
+              goTo('worker-profile', { workerId: id });
             }} />);
 
 
@@ -315,30 +310,27 @@ export function App() {
         return (
           <Wallet
             onBack={() => {
-              setActiveTab('profile');
-              setCurrentScreen('main');
+              goTo('main', { tab: 'profile' });
             }}
-            onWithdraw={() => setCurrentScreen('wallet-withdraw')}
+            onWithdraw={() => goTo('wallet-withdraw')}
             onAddMoney={() => {
-              setWalletActionType('add');
-              setCurrentScreen('wallet-action');
+              goTo('wallet-action', { walletAction: 'add' });
             }}
             onSendMoney={() => {
-              setWalletActionType('send');
-              setCurrentScreen('wallet-action');
+              goTo('wallet-action', { walletAction: 'send' });
             }}
             onTransactionClick={(id) => {
               setSelectedTransactionId(id);
-              setCurrentScreen('transaction-detail');
+              goTo('transaction-detail', { transactionId: id });
             }}
-            onInvoices={() => setCurrentScreen('invoice-list')} />);
+            onInvoices={() => goTo('invoice-list')} />);
 
 
       case 'wallet-withdraw':
         return (
           <WalletWithdraw
-            onBack={() => setCurrentScreen('wallet')}
-            onSuccess={() => setCurrentScreen('wallet')} />);
+            onBack={() => goTo('wallet')}
+            onSuccess={() => goTo('wallet')} />);
 
 
       case 'skill-swap':
@@ -348,12 +340,10 @@ export function App() {
           <JobHubs
             onBack={goBack}
             onWorkerClick={(id) => {
-              setSelectedWorkerId(id);
-              setCurrentScreen('worker-profile');
+              goTo('worker-profile', { workerId: id });
             }}
             onChatClick={(id) => {
-              setSelectedChatId(id);
-              setCurrentScreen('chat-conversation');
+              goTo('chat-conversation', { chatId: id });
             }} />);
 
 
@@ -367,13 +357,13 @@ export function App() {
             onBack={goBack}
             onLogout={() => {
               logout();
-              setCurrentScreen('welcome');
+              goTo('welcome');
             }}
             isDark={isDark}
             onToggleTheme={toggleTheme}
             onNavigate={(pageId) => {
               setSelectedSettingsPage(pageId);
-              setCurrentScreen('settings-detail');
+              goTo('settings-detail', { settingsPage: pageId });
             }} />);
 
 
@@ -387,10 +377,14 @@ export function App() {
       case 'worker-profile':
         return (
           <WorkerProfile
-            workerId={selectedWorkerId || 'w1'}
+            workerId={selectedWorkerId || ''}
             onBack={goBack}
-            onMessage={() => setCurrentScreen('chat-conversation')}
-            onHire={() => setCurrentScreen('rating-review')} />);
+            onMessage={async () => {
+              if (!selectedWorkerId) return;
+              const { chatId } = await api.chats.start(selectedWorkerId);
+              goTo('chat-conversation', { chatId });
+            }}
+            onHire={() => goTo('rating-review')} />);
 
 
       case 'skills-management':
@@ -399,26 +393,25 @@ export function App() {
         return (
           <InvoiceList
             onBack={goBack}
-            onCreateNew={() => setCurrentScreen('create-invoice')}
+            onCreateNew={() => goTo('create-invoice')}
             onInvoiceClick={(id) => {
-              setSelectedInvoiceId(id);
-              setCurrentScreen('invoice-detail');
+              goTo('invoice-detail', { invoiceId: id });
             }} />);
 
 
       case 'create-invoice':
         return (
           <CreateInvoice
-            onBack={() => setCurrentScreen('invoice-list')}
-            onSave={() => setCurrentScreen('invoice-list')} />);
+            onBack={() => goTo('invoice-list')}
+            onSave={() => goTo('invoice-list')} />);
 
 
       case 'invoice-detail':
         return (
           <InvoiceDetail
-            invoiceId={selectedInvoiceId || 'inv1'}
-            onBack={() => setCurrentScreen('invoice-list')}
-            onEdit={() => setCurrentScreen('create-invoice')} />);
+            invoiceId={selectedInvoiceId || ''}
+            onBack={() => goTo('invoice-list')}
+            onEdit={() => goTo('create-invoice')} />);
 
 
       case 'stories':
@@ -426,8 +419,7 @@ export function App() {
           <Stories
             onBack={goBack}
             onProfileClick={(id) => {
-              setSelectedWorkerId(id);
-              setCurrentScreen('worker-profile');
+              goTo('worker-profile', { workerId: id });
             }} />);
 
 
@@ -438,10 +430,9 @@ export function App() {
           <Explore
             onBack={goBack}
             onWorkerClick={(id) => {
-              setSelectedWorkerId(id);
-              setCurrentScreen('worker-profile');
+              goTo('worker-profile', { workerId: id });
             }}
-            onChallenges={() => setCurrentScreen('skill-challenges')} />);
+            onChallenges={() => goTo('skill-challenges')} />);
 
 
       case 'create-duet':
@@ -453,8 +444,7 @@ export function App() {
           <CreateJobPost
             onBack={goBack}
             onSubmit={() => {
-              setActiveTab('jobs');
-              setCurrentScreen('main');
+              goTo('main', { tab: 'jobs' });
             }} />);
 
 
@@ -462,10 +452,9 @@ export function App() {
         return (
           <ApplyJob
             jobId={selectedJobId || 'j1'}
-            onBack={() => setCurrentScreen('job-detail')}
+            onBack={() => goTo('job-detail', { jobId: selectedJobId || undefined })}
             onSubmit={() => {
-              setActiveTab('jobs');
-              setCurrentScreen('main');
+              goTo('main', { tab: 'jobs' });
             }} />);
 
 
@@ -477,7 +466,7 @@ export function App() {
             onBack={goBack}
             onProgramClick={(id) => {
               setSelectedProgramId(id);
-              setCurrentScreen('program-detail');
+              goTo('program-detail', { programId: id });
             }} />);
 
 
@@ -486,8 +475,7 @@ export function App() {
           <ProgramDetail
             programId={selectedProgramId}
             onBack={() => {
-              setActiveTab('skill-hub');
-              setCurrentScreen('main');
+              goTo('main', { tab: 'skill-hub' });
             }} />);
 
 
@@ -495,23 +483,22 @@ export function App() {
         return (
           <SettingsDetail
             pageId={selectedSettingsPage}
-            onBack={() => setCurrentScreen('settings')} />);
+            onBack={() => goTo('settings')} />);
 
 
       case 'wallet-action':
         return (
           <WalletAction
             actionType={walletActionType}
-            onBack={() => setCurrentScreen('wallet')} />);
+            onBack={() => goTo('wallet')} />);
 
 
       case 'new-message':
         return (
           <NewMessage
-            onBack={() => setCurrentScreen('main')}
+            onBack={() => goTo('main', { tab: 'messages' })}
             onChatClick={(id) => {
-              setSelectedChatId(id);
-              setCurrentScreen('chat-conversation');
+              goTo('chat-conversation', { chatId: id });
             }} />);
 
 
@@ -520,19 +507,21 @@ export function App() {
           <CallScreen
             chatId={selectedChatId || 'c1'}
             isVideo={isVideoCall}
-            onEndCall={() => setCurrentScreen('chat-conversation')} />);
+            onEndCall={() =>
+              goTo('chat-conversation', { chatId: selectedChatId || undefined })
+            } />);
 
 
       case 'saved-jobs':
         return (
           <SavedJobs
-            onBack={() => setCurrentScreen('main')}
+            onBack={() => goTo('main', { tab: 'jobs' })}
             onJobClick={openJobDetail} />);
 
 
       default:
         return (
-          <OnboardingSlides onComplete={() => setCurrentScreen('welcome')} />);
+          <OnboardingSlides onComplete={() => goTo('welcome')} />);
 
     }
   };

@@ -163,5 +163,25 @@ export const messages = pgTable('messages', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const invoices = pgTable('invoices', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  clientName: varchar('client_name', { length: 100 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(),
+  number: varchar('number', { length: 50 }).notNull(),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 10 }).default('NGN').notNull(),
+  status: varchar('status', { length: 20 }).default('draft').notNull(),
+  dueDate: timestamp('due_date'),
+  notes: text('notes'),
+  lineItems: jsonb('line_items')
+    .$type<{ description: string; quantity: number; rate: number }[]>()
+    .default([])
+    .notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Job = typeof jobs.$inferSelect;

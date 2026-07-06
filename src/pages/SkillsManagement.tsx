@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   PlusIcon,
   EditIcon,
@@ -7,31 +7,16 @@ import {
   ArrowLeftIcon } from
 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
+import { useAuth } from '../context/AuthContext';
+import { api, ApiError } from '../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 interface SkillItem {
   id: string;
   name: string;
   icon: string;
   level: 'beginner' | 'intermediate' | 'expert';
 }
-const INITIAL_SKILLS: SkillItem[] = [
-{
-  id: '1',
-  name: 'Mechanic',
-  icon: '🔧',
-  level: 'expert'
-},
-{
-  id: '2',
-  name: 'Driver',
-  icon: '🚗',
-  level: 'intermediate'
-},
-{
-  id: '3',
-  name: 'Electrician',
-  icon: '⚡',
-  level: 'beginner'
-}];
+const INITIAL_SKILLS: SkillItem[] = [];
 
 const ALL_SKILLS = [
 {
@@ -109,12 +94,44 @@ interface SkillsManagementProps {
   onBack: () => void;
 }
 export function SkillsManagement({ onBack }: SkillsManagementProps) {
+  const { user, refreshUser } = useAuth();
+  const queryClient = useQueryClient();
   const [skills, setSkills] = useState<SkillItem[]>(INITIAL_SKILLS);
+  const [isSaving, setIsSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedNewSkill, setSelectedNewSkill] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<
     'beginner' | 'intermediate' | 'expert'>(
     'beginner');
+  useEffect(() => {
+    if (user?.skills) {
+      setSkills(
+        user.skills.map((s) => ({
+          id: s.id,
+          name: s.name,
+          icon: s.icon,
+          level: s.level,
+        }))
+      );
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await api.users.updateSkills(
+        skills.map((s) => ({ name: s.name, icon: s.icon, level: s.level }))
+      );
+      await refreshUser();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      onBack();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const addSkill = () => {
     if (!selectedNewSkill) return;
     const skillInfo = ALL_SKILLS.find((s) => s.name === selectedNewSkill);
@@ -290,6 +307,11 @@ export function SkillsManagement({ onBack }: SkillsManagementProps) {
           </div>
         </div>
       }
-    </div>);
-
+      <div className="p-4 border-t border-border bg-surface flex-shrink-0">
+        <ActionButton onClick={handleSave} loading={isSaving} variant="gradient">
+          Save Skills
+        </ActionButton>
+      </div>
+    </div>
+  );
 }

@@ -9,11 +9,15 @@ import {
 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { SkillTag } from '../components/ui/SkillTag';
+import { useQueryClient } from '@tanstack/react-query';
+import { api, ApiError } from '../lib/api';
 interface VideoUploadProps {
   onBack: () => void;
 }
 export function VideoUpload({ onBack }: VideoUploadProps) {
+  const queryClient = useQueryClient();
   const [hasVideo, setHasVideo] = useState(false);
+  const [thumbnail, setThumbnail] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
   const [title, setTitle] = useState('');
@@ -21,28 +25,40 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
   const [description, setDescription] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [posted, setPosted] = useState(false);
+  const [error, setError] = useState('');
   const maxDesc = 200;
   const handleVideoSelect = () => {
     setHasVideo(true);
+    setThumbnail('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
     setIsScanning(true);
-    // Simulate AI scanning
     setTimeout(() => {
       setIsScanning(false);
       setScanComplete(true);
-      // Auto-fill based on AI
-      setCategory('plumber');
+      setCategory('Plumber');
       setTitle('Fixing a leaking PVC pipe');
     }, 2500);
   };
   const handleAcceptScan = () => {
     setScanComplete(false);
   };
-  const handlePost = () => {
+  const handlePost = async () => {
     setIsPosting(true);
-    setTimeout(() => {
-      setIsPosting(false);
+    setError('');
+    try {
+      await api.videos.create({
+        title,
+        skillCategory: category,
+        description,
+        thumbnail,
+        duration: '0:45',
+      });
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
       setPosted(true);
-    }, 1500);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to post video');
+    } finally {
+      setIsPosting(false);
+    }
   };
   if (posted) {
     return (
@@ -282,6 +298,9 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
 
         {!isScanning && !scanComplete &&
         <div className="mt-8 pb-6">
+            {error && (
+              <p className="text-red-500 text-sm text-center mb-4">{error}</p>
+            )}
             <ActionButton
             onClick={handlePost}
             loading={isPosting}

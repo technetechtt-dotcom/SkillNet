@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq } from 'drizzle-orm';
+import { eq, ne } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { userSkills, users } from '../db/schema.js';
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
@@ -14,6 +14,33 @@ router.get('/me', requireAuth, async (req: AuthRequest, res) => {
     return;
   }
   res.json(user);
+});
+
+router.get('/search', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const q = (req.query.q as string) || '';
+    const allUsers = await db
+      .select()
+      .from(users)
+      .where(ne(users.id, req.userId!))
+      .limit(50);
+
+    const filtered = q
+      ? allUsers.filter(
+          (u) =>
+            u.name.toLowerCase().includes(q.toLowerCase()) ||
+            (u.location?.toLowerCase().includes(q.toLowerCase()) ?? false)
+        )
+      : allUsers;
+
+    const result = await Promise.all(
+      filtered.slice(0, 20).map((u) => serializeUser(u.id))
+    );
+    res.json(result.filter(Boolean));
+  } catch (err) {
+    console.error('User search error:', err);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
 });
 
 router.get('/:id', requireAuth, async (req, res) => {

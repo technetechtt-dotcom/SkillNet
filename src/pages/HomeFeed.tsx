@@ -19,6 +19,9 @@ import { SkillTag } from '../components/ui/SkillTag';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Video, User } from '../types';
 import { formatCount } from '../utils/format';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import { mapApiVideo } from '../lib/mappers';
 // ── For You Feed Data ──
 const FOR_YOU_VIDEOS: Video[] = [
 {
@@ -791,12 +794,22 @@ export function HomeFeed({
   const [activeTab, setActiveTab] = useState('foryou');
   const [showInsight, setShowInsight] = useState(true);
   const [showTraining, setShowTraining] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { data: apiVideos = [], isLoading: videosLoading } = useQuery({
+    queryKey: ['videos'],
+    queryFn: () => api.videos.list(),
+  });
+
+  const feedVideos =
+    apiVideos.length > 0 ? apiVideos.map(mapApiVideo) : FOR_YOU_VIDEOS;
+
+  const isLoading = videosLoading && apiVideos.length === 0;
+
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 800);
+    if (!videosLoading) return;
+    const timer = setTimeout(() => {}, 800);
     return () => clearTimeout(timer);
-  }, [activeTab]);
+  }, [activeTab, videosLoading]);
   const handleWatchTraining = () => {
     setShowTraining(true);
     setTimeout(() => {
@@ -972,7 +985,7 @@ export function HomeFeed({
               </div>
             </div>
 
-            {FOR_YOU_VIDEOS.map((video) =>
+            {feedVideos.map((video) =>
             <VideoCard key={video.id} video={video} onDuet={onDuet} />
             )}
           </div>);

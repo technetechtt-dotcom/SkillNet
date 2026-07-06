@@ -93,15 +93,19 @@ After seeding, sign in with:
 - PostgreSQL persistence via Neon
 - Real job marketplace (list, post, apply, save)
 - Wallet with add/send/withdraw transactions
-- Chat messaging API
-- Notifications on job applications
-- Protected API routes
+- Chat messaging with start-conversation flow
+- Notifications from database
+- User profiles (view, edit, skills management)
+- Video portfolio (list + post to API)
+- User search for new messages
+- GitHub Actions CI on push/PR
 
 ## Still UI-Only (future work)
 
-- Video upload to cloud storage (S3/Cloudinary)
+- Video file upload to cloud storage (S3/Cloudinary)
 - WebRTC voice/video calls
 - Real-time chat (WebSockets)
 - URL routing (react-router)
 - Mobile money integrations (M-Pesa, Paystack)
 - Push notifications
+- Invoices API

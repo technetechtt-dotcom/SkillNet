@@ -17,6 +17,9 @@ import { UserAvatar } from '../components/ui/UserAvatar';
 import { SkillTag } from '../components/ui/SkillTag';
 import { ActionButton } from '../components/ui/ActionButton';
 import { RatingStars } from '../components/ui/RatingStars';
+import { useAuth } from '../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
 interface SkillProfileProps {
   onEditProfile?: () => void;
   onAddSkill?: () => void;
@@ -42,6 +45,28 @@ export function SkillProfile({
   isDark
 }: SkillProfileProps) {
   const [safeMode, setSafeMode] = useState(false);
+  const { user } = useAuth();
+
+  const { data: wallet } = useQuery({
+    queryKey: ['wallet'],
+    queryFn: () => api.wallet.get(),
+  });
+
+  const { data: allVideos = [] } = useQuery({
+    queryKey: ['videos'],
+    queryFn: () => api.videos.list(),
+  });
+
+  const myVideos = allVideos.filter((v) => v.userId === user?.id);
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background overflow-y-auto">
       {/* Cover & Avatar */}
@@ -72,8 +97,8 @@ export function SkillProfile({
       <div className="px-4 relative pb-6 bg-surface border-b border-border">
         <div className="absolute -top-12 left-4">
           <UserAvatar
-            name="Kwame Mensah"
-            src="https://i.pravatar.cc/150?u=kwame"
+            name={user.name}
+            src={user.avatar || undefined}
             size="xl"
             className="border-4 border-surface shadow-md" />
           
@@ -85,11 +110,11 @@ export function SkillProfile({
         <div className="pt-12 flex justify-between items-start">
           <div>
             <h1 className="text-2xl font-bold text-text-primary">
-              Kwame Mensah
+              {user.name}
             </h1>
             <div className="flex items-center gap-1 text-text-secondary mt-1">
               <MapPinIcon className="w-4 h-4" />
-              <span className="text-sm">Accra, Ghana</span>
+              <span className="text-sm">{user.location || 'Add location'}</span>
             </div>
           </div>
           <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full border border-primary/20">
@@ -98,8 +123,7 @@ export function SkillProfile({
         </div>
 
         <p className="mt-4 text-text-secondary text-sm leading-relaxed">
-          Professional mechanic with 8 years of experience. Specializing in
-          Toyota and Honda engines. Fast, reliable, and honest work.
+          {user.bio || 'Add a bio to tell employers about your skills and experience.'}
         </p>
 
         {/* Stats */}
@@ -107,20 +131,20 @@ export function SkillProfile({
           <div className="flex flex-col items-center flex-1">
             <div className="flex items-center gap-1 text-primary mb-1">
               <ShieldIcon className="w-5 h-5" />
-              <span className="font-bold text-lg">95</span>
+              <span className="font-bold text-lg">{user.trustScore}</span>
             </div>
             <span className="text-xs text-text-secondary">Trust Score</span>
           </div>
           <div className="w-px bg-border" />
           <div className="flex flex-col items-center flex-1">
-            <span className="font-bold text-lg text-text-primary mb-1">42</span>
+            <span className="font-bold text-lg text-text-primary mb-1">{user.completedJobs}</span>
             <span className="text-xs text-text-secondary">Jobs Done</span>
           </div>
           <div className="w-px bg-border" />
           <div className="flex flex-col items-center flex-1">
             <div className="flex items-center gap-1 text-secondary mb-1">
               <StarIcon className="w-5 h-5 fill-secondary" />
-              <span className="font-bold text-lg">4.8</span>
+              <span className="font-bold text-lg">{user.rating.toFixed(1)}</span>
             </div>
             <span className="text-xs text-text-secondary">Rating</span>
           </div>
@@ -190,7 +214,7 @@ export function SkillProfile({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-black text-text-primary">
-              ₦125,000
+              {wallet?.formattedBalance || '₦0'}
             </span>
             <ChevronRightIcon className="w-5 h-5 text-text-secondary" />
           </div>
@@ -269,24 +293,14 @@ export function SkillProfile({
           </button>
         </div>
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <SkillTag name="Mechanic" icon="🔧" level="expert" size="lg" />
-            <span className="text-xs text-text-secondary font-medium">
-              12 endorsements
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <SkillTag name="Driver" icon="🚗" level="intermediate" size="lg" />
-            <span className="text-xs text-text-secondary font-medium">
-              5 endorsements
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <SkillTag name="Engine Repair" level="expert" />
-            <span className="text-xs text-text-secondary font-medium">
-              8 endorsements
-            </span>
-          </div>
+          {user.skills.length === 0 && (
+            <p className="text-sm text-text-secondary">No skills added yet.</p>
+          )}
+          {user.skills.map((skill) => (
+            <div key={skill.id} className="flex items-center justify-between">
+              <SkillTag name={skill.name} icon={skill.icon} level={skill.level} size="lg" />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -296,27 +310,24 @@ export function SkillProfile({
           Portfolio Videos
         </h2>
         <div className="grid grid-cols-2 gap-3">
-          {[
-          'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-          'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-          'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-          'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'].
-          map((src, i) =>
+          {myVideos.length === 0 && (
+            <p className="col-span-2 text-sm text-text-secondary text-center py-4">
+              No videos yet. Tap Add Video to showcase your skills.
+            </p>
+          )}
+          {myVideos.map((video) => (
           <div
-            key={i}
+            key={video.id}
             className="relative aspect-[3/4] bg-gray-900 rounded-xl overflow-hidden">
-            
               <img
-              src={src}
-              alt={`Portfolio ${i + 1}`}
+              src={video.thumbnail || 'https://picsum.photos/seed/video/400/600'}
+              alt={video.title}
               className="w-full h-full object-cover" />
-            
               <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-xs font-bold bg-black/50 px-2 py-1 rounded-md backdrop-blur-sm">
-                <StarIcon className="w-3 h-3 fill-white" />{' '}
-                {(1.2 + i * 0.3).toFixed(1)}k
+                <StarIcon className="w-3 h-3 fill-white" /> {video.likes}
               </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
 

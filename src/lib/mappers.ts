@@ -1,5 +1,5 @@
-import { ApiJob, ApiUser } from './api';
-import { Job, User } from '../types';
+import { ApiJob, ApiUser, ApiVideo } from './api';
+import { Job, User, Video } from '../types';
 
 export function mapApiUser(user: ApiUser | null): User {
   if (!user) {
@@ -43,5 +43,21 @@ export function mapApiJob(job: ApiJob): Job {
     postedTime: job.postedTime,
     applicants: job.applicants,
     isUrgent: job.isUrgent,
+  };
+}
+
+export function mapApiVideo(video: ApiVideo): Video {
+  return {
+    id: video.id,
+    userId: video.userId,
+    user: mapApiUser(video.user),
+    title: video.title,
+    skillCategory: video.skillCategory || '',
+    description: video.description || '',
+    thumbnail: video.thumbnail || '',
+    likes: video.likes,
+    comments: video.comments,
+    shares: video.shares,
+    duration: video.duration || '0:00',
   };
 }
