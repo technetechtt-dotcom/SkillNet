@@ -800,6 +800,21 @@ export function HomeFeed({
     queryFn: () => api.videos.list(),
   });
 
+  const { data: storyRings = [] } = useQuery({
+    queryKey: ['stories', 'feed'],
+    queryFn: () => api.stories.feed(),
+  });
+
+  const storyRow = [
+    { id: 'your-story', userName: 'Your Story', userAvatar: '', isYourStory: true },
+    ...storyRings.map((s) => ({
+      id: s.userId,
+      userName: s.userName.split(' ')[0],
+      userAvatar: s.userAvatar || '',
+      isYourStory: false,
+    })),
+  ];
+
   const feedVideos =
     apiVideos.length > 0 ? apiVideos.map(mapApiVideo) : FOR_YOU_VIDEOS;
 
@@ -840,7 +855,7 @@ export function HomeFeed({
           <div className="p-4 space-y-4">
             {/* Stories Row */}
             <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
-              {MOCK_STORIES.map((story) =>
+              {storyRow.map((story) =>
               <button
                 key={story.id}
                 onClick={() =>

@@ -23,6 +23,9 @@ export const users = pgTable('users', {
   completedJobs: integer('completed_jobs').default(0).notNull(),
   rating: real('rating').default(0).notNull(),
   isOnline: boolean('is_online').default(false).notNull(),
+  latitude: real('latitude'),
+  longitude: real('longitude'),
+  availabilityStatus: varchar('availability_status', { length: 20 }).default('available'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -45,7 +48,7 @@ export const jobs = pgTable('jobs', {
   description: text('description').notNull(),
   location: varchar('location', { length: 100 }).notNull(),
   paymentAmount: integer('payment_amount').notNull(),
-  paymentCurrency: varchar('payment_currency', { length: 10 }).default('NGN').notNull(),
+  paymentCurrency: varchar('payment_currency', { length: 10 }).default('ZAR').notNull(),
   paymentType: varchar('payment_type', { length: 20 }).notNull(),
   requiredSkills: jsonb('required_skills').$type<string[]>().default([]).notNull(),
   isUrgent: boolean('is_urgent').default(false).notNull(),
@@ -103,7 +106,7 @@ export const wallets = pgTable('wallets', {
     .notNull()
     .unique(),
   balance: integer('balance').default(0).notNull(),
-  currency: varchar('currency', { length: 10 }).default('NGN').notNull(),
+  currency: varchar('currency', { length: 10 }).default('ZAR').notNull(),
 });
 
 export const transactions = pgTable('transactions', {
@@ -115,6 +118,8 @@ export const transactions = pgTable('transactions', {
   amount: integer('amount').notNull(),
   description: text('description'),
   status: varchar('status', { length: 20 }).default('completed').notNull(),
+  reference: varchar('reference', { length: 100 }),
+  metadata: jsonb('metadata').$type<Record<string, string>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -172,7 +177,7 @@ export const invoices = pgTable('invoices', {
   type: varchar('type', { length: 20 }).notNull(),
   number: varchar('number', { length: 50 }).notNull(),
   amount: integer('amount').notNull(),
-  currency: varchar('currency', { length: 10 }).default('NGN').notNull(),
+  currency: varchar('currency', { length: 10 }).default('ZAR').notNull(),
   status: varchar('status', { length: 20 }).default('draft').notNull(),
   dueDate: timestamp('due_date'),
   notes: text('notes'),
@@ -181,6 +186,58 @@ export const invoices = pgTable('invoices', {
     .default([])
     .notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const stories = pgTable('stories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  mediaUrl: text('media_url').notNull(),
+  mediaType: varchar('media_type', { length: 20 }).default('image').notNull(),
+  text: text('text'),
+  skillTag: varchar('skill_tag', { length: 50 }),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const challenges = pgTable('challenges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 100 }).notNull(),
+  hashtag: varchar('hashtag', { length: 100 }).notNull(),
+  emoji: varchar('emoji', { length: 10 }).default('🏆').notNull(),
+  description: text('description'),
+  category: varchar('category', { length: 50 }).notNull(),
+  prize: varchar('prize', { length: 100 }),
+  startsAt: timestamp('starts_at').notNull(),
+  endsAt: timestamp('ends_at').notNull(),
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  featured: boolean('featured').default(false).notNull(),
+});
+
+export const challengeParticipants = pgTable(
+  'challenge_participants',
+  {
+    challengeId: uuid('challenge_id')
+      .references(() => challenges.id, { onDelete: 'cascade' })
+      .notNull(),
+    userId: uuid('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    joinedAt: timestamp('joined_at').defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.challengeId, table.userId] })]
+);
+
+export const challengeWinners = pgTable('challenge_winners', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  challengeId: uuid('challenge_id')
+    .references(() => challenges.id, { onDelete: 'cascade' })
+    .notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  displayName: varchar('display_name', { length: 100 }).notNull(),
+  avatar: text('avatar'),
+  rank: integer('rank').notNull(),
 });
 
 export type User = typeof users.$inferSelect;

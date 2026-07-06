@@ -53,9 +53,9 @@ export function InvoiceList({
   });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NGN',
+      currency: 'ZAR',
       minimumFractionDigits: 0,
     }).format(amount);
   };

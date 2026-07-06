@@ -1,6 +1,6 @@
-# SkillNet Africa
+# SkillNet South Africa
 
-Production-ready skilled-trades platform for Africa — video portfolio, local jobs, messaging, and wallet.
+Production-ready skilled-trades platform for South Africa — video portfolio, local jobs, messaging, and wallet.
 
 ## Stack
 
@@ -56,9 +56,11 @@ After seeding, sign in with:
 
 | Role | Phone | Password |
 |------|-------|----------|
-| Worker | +233201234567 | password123 |
-| Employer | +2348012345678 | password123 |
-| Employer | +254712345678 | password123 |
+| Worker | +27821234567 | password123 |
+| Employer | +27831112233 | password123 |
+| Employer | +27721234567 | password123 |
+
+Sign in with country code **+27** (South Africa). Example: select +27 and enter `821234567`.
 
 ## API Endpoints
 

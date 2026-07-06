@@ -35,7 +35,7 @@ export function CreateJobPost({ onBack, onSubmit }: CreateJobPostProps) {
         description,
         location,
         paymentAmount: Number(payment.replace(/,/g, '')),
-        paymentCurrency: 'NGN',
+        paymentCurrency: 'ZAR',
         paymentType,
         requiredSkills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         isUrgent,
@@ -134,7 +134,7 @@ export function CreateJobPost({ onBack, onSubmit }: CreateJobPostProps) {
                 required
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Victoria Island, Lagos"
+                placeholder="e.g. Sandton, Johannesburg"
                 className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
               
             </div>

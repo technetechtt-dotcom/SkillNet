@@ -58,7 +58,7 @@ export function JobMarketplace({
     setTimeout(() => {
       setIsListening(false);
       setVoiceResult(true);
-      setSearchQuery('plumbing jobs in Accra under ₦30k today');
+      setSearchQuery('plumbing jobs in Johannesburg under R3,000 today');
     }, 3000);
   };
   const filteredJobs = jobs.filter((job) => {
@@ -149,7 +149,7 @@ export function JobMarketplace({
               I heard:
             </h2>
             <p className="text-xl text-text-secondary italic">
-              "Find me plumbing jobs in Accra under ₦30k today"
+              "Find me plumbing jobs in Johannesburg under R3,000 today"
             </p>
           </div>
 
@@ -169,13 +169,13 @@ export function JobMarketplace({
                   Location
                 </span>
                 <span className="font-bold text-text-primary bg-surface px-3 py-1 rounded-lg border border-border">
-                  Accra
+                  Johannesburg
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-text-secondary font-medium">Budget</span>
                 <span className="font-bold text-text-primary bg-surface px-3 py-1 rounded-lg border border-border">
-                  &lt; ₦30,000
+                  &lt; R3,000
                 </span>
               </div>
               <div className="flex justify-between items-center">

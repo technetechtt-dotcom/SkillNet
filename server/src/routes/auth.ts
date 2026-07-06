@@ -52,7 +52,7 @@ router.post('/register', async (req, res) => {
       );
     }
 
-    await db.insert(wallets).values({ userId: user.id, balance: 0, currency: 'NGN' });
+    await db.insert(wallets).values({ userId: user.id, balance: 0, currency: 'ZAR' });
 
     const token = signToken(user.id);
     const userData = await serializeUser(user.id);

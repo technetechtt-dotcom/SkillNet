@@ -16,7 +16,7 @@ export function SignIn({
   onCreateAccount,
   onLogin,
 }: SignInProps) {
-  const [countryCode, setCountryCode] = useState('+234');
+  const [countryCode, setCountryCode] = useState('+27');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -69,16 +69,16 @@ export function SignIn({
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
                 className="bg-surface border border-border rounded-2xl px-4 py-4 text-text-primary focus:outline-none focus:border-primary text-base min-w-[100px]">
+                <option value="+27">🇿🇦 +27</option>
                 <option value="+234">🇳🇬 +234</option>
                 <option value="+254">🇰🇪 +254</option>
-                <option value="+27">🇿🇦 +27</option>
                 <option value="+233">🇬🇭 +233</option>
               </select>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="080 123 4567"
+                placeholder="82 123 4567"
                 className="flex-1 bg-surface border border-border rounded-2xl px-4 py-4 text-text-primary placeholder-text-secondary focus:outline-none focus:border-primary text-base" />
               
             </div>

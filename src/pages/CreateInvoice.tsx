@@ -79,9 +79,9 @@ export function CreateInvoice({ onBack, onSave }: CreateInvoiceProps) {
   const total = subtotal;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NGN',
+      currency: 'ZAR',
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -200,7 +200,7 @@ export function CreateInvoice({ onBack, onSave }: CreateInvoiceProps) {
                     </div>
                     <div className="flex-[2]">
                       <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">
-                        Rate (₦)
+                        Rate (R)
                       </label>
                       <input
                         type="number"
@@ -249,7 +249,7 @@ export function CreateInvoice({ onBack, onSave }: CreateInvoiceProps) {
           </div>
           <div className="flex justify-between items-center text-sm font-medium text-text-secondary">
             <span>Tax (0%)</span>
-            <span>₦0</span>
+            <span>R0</span>
           </div>
           <div className="pt-3 border-t border-border flex justify-between items-center">
             <span className="font-bold text-text-primary">Total</span>

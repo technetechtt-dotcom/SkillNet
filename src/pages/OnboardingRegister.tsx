@@ -18,7 +18,7 @@ export function OnboardingRegister({
   onNext,
   onBack,
 }: OnboardingRegisterProps) {
-  const [countryCode, setCountryCode] = useState('+234');
+  const [countryCode, setCountryCode] = useState('+27');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -56,7 +56,7 @@ export function OnboardingRegister({
           Create Account
         </h1>
         <p className="text-text-secondary mb-8">
-          Enter your details to join SkillNet Africa.
+          Enter your details to join SkillNet South Africa.
         </p>
 
         <div className="space-y-6 flex-1">
@@ -69,16 +69,16 @@ export function OnboardingRegister({
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
                 className="bg-surface border border-border rounded-2xl px-4 py-4 text-text-primary focus:outline-none focus:border-primary text-base min-w-[100px]">
+                <option value="+27">🇿🇦 +27</option>
                 <option value="+234">🇳🇬 +234</option>
                 <option value="+254">🇰🇪 +254</option>
-                <option value="+27">🇿🇦 +27</option>
                 <option value="+233">🇬🇭 +233</option>
               </select>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="080 123 4567"
+                placeholder="82 123 4567"
                 className="flex-1 bg-surface border border-border rounded-2xl px-4 py-4 text-text-primary placeholder-text-secondary focus:outline-none focus:border-primary text-base"
               />
             </div>
@@ -105,7 +105,7 @@ export function OnboardingRegister({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Kwame Mensah"
+              placeholder="e.g. Sipho Ndlovu"
               className="w-full bg-surface border border-border rounded-2xl px-4 py-4 text-text-primary placeholder-text-secondary focus:outline-none focus:border-primary text-base"
             />
           </div>
@@ -118,7 +118,7 @@ export function OnboardingRegister({
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Accra, Ghana"
+              placeholder="e.g. Johannesburg, South Africa"
               className="w-full bg-surface border border-border rounded-2xl px-4 py-4 text-text-primary placeholder-text-secondary focus:outline-none focus:border-primary text-base"
             />
           </div>

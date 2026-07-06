@@ -26,17 +26,51 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [posted, setPosted] = useState(false);
   const [error, setError] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoDuration, setVideoDuration] = useState('');
+  const [uploadProgress, setUploadProgress] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const maxDesc = 200;
-  const handleVideoSelect = () => {
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setHasVideo(true);
-    setThumbnail('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
     setIsScanning(true);
-    setTimeout(() => {
+    setScanComplete(false);
+    setUploadProgress('Uploading...');
+    setError('');
+
+    try {
+      const preview = URL.createObjectURL(file);
+      setThumbnail(preview);
+
+      const uploaded = await api.videos.upload(file);
+      setVideoUrl(uploaded.videoUrl || uploaded.thumbnail);
+      setThumbnail(uploaded.thumbnail);
+
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        const mins = Math.floor(video.duration / 60);
+        const secs = Math.floor(video.duration % 60);
+        setVideoDuration(`${mins}:${secs.toString().padStart(2, '0')}`);
+        URL.revokeObjectURL(video.src);
+      };
+      video.src = preview;
+
       setIsScanning(false);
       setScanComplete(true);
-      setCategory('Plumber');
-      setTitle('Fixing a leaking PVC pipe');
-    }, 2500);
+      setCategory(file.type.startsWith('video/') ? 'Plumber' : 'Plumber');
+      setTitle(file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '));
+      setUploadProgress('');
+    } catch (err) {
+      setIsScanning(false);
+      setHasVideo(false);
+      setError(err instanceof ApiError ? err.message : 'Upload failed');
+      setUploadProgress('');
+    }
   };
   const handleAcceptScan = () => {
     setScanComplete(false);
@@ -50,7 +84,8 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
         skillCategory: category,
         description,
         thumbnail,
-        duration: '0:45',
+        videoUrl: videoUrl || undefined,
+        duration: videoDuration || '0:45',
       });
       queryClient.invalidateQueries({ queryKey: ['videos'] });
       setPosted(true);
@@ -94,28 +129,36 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
 
       <div className="flex-1 overflow-y-auto p-4">
         {/* Upload Area */}
-        {!hasVideo ?
-        <button
-          onClick={handleVideoSelect}
-          className="w-full aspect-video bg-surface border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-3 mb-6 hover:border-primary hover:bg-primary/5 transition-colors shadow-sm">
-          
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <VideoIcon className="w-8 h-8 text-primary" />
-            </div>
-            <span className="text-text-primary font-bold">
-              Tap to upload video
-            </span>
-            <span className="text-xs text-text-secondary font-medium">
-              MP4, MOV up to 100MB
-            </span>
-          </button> :
-
-        <div className="relative w-full aspect-video bg-gray-900 rounded-2xl overflow-hidden mb-6 shadow-md">
+        {!hasVideo ? (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*,image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full aspect-video bg-surface border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-3 mb-6 hover:border-primary hover:bg-primary/5 transition-colors shadow-sm">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <VideoIcon className="w-8 h-8 text-primary" />
+              </div>
+              <span className="text-text-primary font-bold">
+                Tap to upload video
+              </span>
+              <span className="text-xs text-text-secondary font-medium">
+                MP4, MOV up to 100MB · Cloudinary
+              </span>
+            </button>
+          </>
+        ) : (
+          <div className="relative w-full aspect-video bg-gray-900 rounded-2xl overflow-hidden mb-6 shadow-md">
             <img
-            src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-            alt="Video preview"
-            className={`w-full h-full object-cover transition-all duration-500 ${isScanning ? 'opacity-40 scale-105 blur-sm' : 'opacity-100'}`} />
-          
+              src={thumbnail}
+              alt="Video preview"
+              className={`w-full h-full object-cover transition-all duration-500 ${isScanning ? 'opacity-40 scale-105 blur-sm' : 'opacity-100'}`}
+            />
 
             {/* Scanning Overlay */}
             {isScanning &&
@@ -133,26 +176,25 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
           }
 
             {/* Normal Controls Overlay */}
-            {!isScanning && !scanComplete &&
-          <>
+            {!isScanning && !scanComplete && (
+              <>
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <div className="bg-white/30 backdrop-blur-sm rounded-full p-4">
                     <VideoIcon className="w-8 h-8 text-white" />
                   </div>
                 </div>
                 <button
-              onClick={() => setHasVideo(false)}
-              className="absolute top-3 right-3 bg-black/50 text-white rounded-full p-2 min-h-[40px] min-w-[40px] flex items-center justify-center hover:bg-black/70 transition-colors">
-              
+                  onClick={() => setHasVideo(false)}
+                  className="absolute top-3 right-3 bg-black/50 text-white rounded-full p-2 min-h-[40px] min-w-[40px] flex items-center justify-center hover:bg-black/70 transition-colors">
                   <XIcon className="w-5 h-5" />
                 </button>
                 <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-md">
-                  0:45
+                  {videoDuration || '0:00'}
                 </div>
               </>
-          }
+            )}
           </div>
-        }
+        )}
 
         {/* AI Results Panel */}
         {scanComplete &&
@@ -300,6 +342,9 @@ export function VideoUpload({ onBack }: VideoUploadProps) {
         <div className="mt-8 pb-6">
             {error && (
               <p className="text-red-500 text-sm text-center mb-4">{error}</p>
+            )}
+            {uploadProgress && (
+              <p className="text-primary text-sm text-center mb-4">{uploadProgress}</p>
             )}
             <ActionButton
             onClick={handlePost}

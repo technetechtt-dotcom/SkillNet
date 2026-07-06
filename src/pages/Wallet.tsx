@@ -37,12 +37,17 @@ export function Wallet({
     queryFn: () => api.wallet.get(),
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ['wallet', 'stats'],
+    queryFn: () => api.wallet.stats(),
+  });
+
   const transactions = wallet?.transactions ?? [];
   const displayTransactions = showingAll ? transactions : transactions.slice(0, 3);
 
   const formatCurrency = (amount: number) => {
-    const currency = wallet?.currency || 'NGN';
-    return new Intl.NumberFormat('en-NG', {
+    const currency = wallet?.currency || 'ZAR';
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
       currency,
       minimumFractionDigits: 0,
@@ -111,7 +116,7 @@ export function Wallet({
                   </div>
                 </div>
                 <h2 className="text-5xl font-black mb-8 tracking-tighter drop-shadow-md">
-                  {wallet?.formattedBalance || '₦0'}
+                  {wallet?.formattedBalance || 'R0'}
                 </h2>
 
                 <div className="flex gap-3">
@@ -149,14 +154,18 @@ export function Wallet({
               <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">
                 Earned this week
               </p>
-              <p className="text-xl font-black text-text-primary">₦45,000</p>
+              <p className="text-xl font-black text-text-primary">
+                {stats?.formattedWeeklyEarned || 'R0'}
+              </p>
             </div>
             <div className="w-px h-10 bg-border" />
             <div>
               <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">
                 Jobs completed
               </p>
-              <p className="text-xl font-black text-text-primary">3</p>
+              <p className="text-xl font-black text-text-primary">
+                {stats?.jobsCompleted ?? 0}
+              </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
               <CreditCardIcon className="w-6 h-6 text-accent" />

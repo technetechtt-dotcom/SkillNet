@@ -38,10 +38,25 @@ export function InvoiceDetail({
     },
   });
 
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    try {
+      const blob = await api.invoices.downloadPdf(invoiceId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${invoice.number}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Failed to download PDF');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NGN',
+      currency: 'ZAR',
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -180,7 +195,7 @@ export function InvoiceDetail({
             </div>
             <div className="flex justify-between text-sm font-medium text-text-secondary">
               <span>Tax (0%)</span>
-              <span>₦0</span>
+              <span>R0</span>
             </div>
             <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/50">
               <span className="font-bold text-text-primary uppercase tracking-wider">
@@ -199,7 +214,8 @@ export function InvoiceDetail({
           variant="outline"
           fullWidth={false}
           className="px-4"
-          aria-label="Download PDF">
+          aria-label="Download PDF"
+          onClick={handleDownloadPdf}>
           <DownloadIcon className="w-5 h-5" />
         </ActionButton>
 

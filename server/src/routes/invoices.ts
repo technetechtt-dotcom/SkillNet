@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { desc, eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { invoices } from '../db/schema.js';
+import { invoices, users } from '../db/schema.js';
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { formatPayment } from '../utils/format.js';
+import { generateInvoicePdf } from '../utils/pdf.js';
 
 const router = Router();
 
@@ -58,6 +59,47 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
   } catch (err) {
     console.error('List invoices error:', err);
     res.status(500).json({ error: 'Failed to fetch invoices' });
+  }
+});
+
+router.get('/:id/pdf', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const [inv] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.id, req.params.id));
+
+    if (!inv || inv.userId !== req.userId) {
+      res.status(404).json({ error: 'Invoice not found' });
+      return;
+    }
+
+    const [owner] = await db.select().from(users).where(eq(users.id, req.userId!));
+    const serialized = serializeInvoice(inv);
+    const pdf = await generateInvoicePdf({
+      type: inv.type,
+      number: inv.number,
+      status: inv.status,
+      clientName: inv.clientName,
+      fromName: owner?.name || 'SkillNet User',
+      fromLocation: owner?.location || undefined,
+      date: serialized.date,
+      dueDate: serialized.dueDate,
+      notes: inv.notes,
+      lineItems: inv.lineItems,
+      amount: inv.amount,
+      currency: inv.currency,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${inv.number}.pdf"`
+    );
+    res.send(pdf);
+  } catch (err) {
+    console.error('Invoice PDF error:', err);
+    res.status(500).json({ error: 'Failed to generate PDF' });
   }
 });
 

@@ -9,6 +9,7 @@ import {
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serialize.js';
 import { timeAgo } from '../utils/format.js';
+import { broadcastChatMessage } from '../ws.js';
 
 const router = Router();
 
@@ -119,14 +120,27 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
       })
       .returning();
 
-    res.status(201).json({
+    const participants = await db
+      .select()
+      .from(chatParticipants)
+      .where(eq(chatParticipants.chatId, req.params.id));
+
+    const payload = {
       id: msg.id,
       senderId: msg.senderId,
       text: msg.text,
       imageUrl: msg.imageUrl,
       timestamp: 'just now',
       isRead: false,
-    });
+    };
+
+    broadcastChatMessage(
+      req.params.id,
+      participants.map((p) => p.userId),
+      payload
+    );
+
+    res.status(201).json(payload);
   } catch (err) {
     console.error('Send message error:', err);
     res.status(500).json({ error: 'Failed to send message' });

@@ -159,6 +159,93 @@ export interface ApiInvoice {
   createdAt: string;
 }
 
+export interface ApiStory {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  skill: string;
+  image: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface ApiStoryGroup {
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  stories: ApiStory[];
+}
+
+export interface ApiStoryRing {
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  hasUnread: boolean;
+}
+
+export interface ApiChallenge {
+  id: string;
+  name: string;
+  emoji: string;
+  description?: string | null;
+  category: string;
+  participants: number;
+  daysLeft?: number;
+  startsIn?: number;
+  prize?: string | null;
+  status: string;
+  featured?: boolean;
+  joined?: boolean;
+  winners?: { name: string; avatar: string | null }[];
+}
+
+export interface ApiExploreData {
+  categories: { name: string; icon: string }[];
+  featuredWorkers: {
+    id: string;
+    name: string;
+    skill: string;
+    rating: number;
+    avatar: string | null;
+  }[];
+  trendingVideos: { id: string; title: string; views: string; image: string }[];
+  activeChallenge: {
+    hashtag: string;
+    name: string;
+    participants: number;
+    daysLeft: number;
+  } | null;
+}
+
+export interface ApiNearbyWorker {
+  id: string;
+  name: string;
+  skill: string;
+  distance: string;
+  distanceKm: number;
+  rating: number;
+  status: string;
+  avatar: string | null;
+  latitude: number;
+  longitude: number;
+  phone: string;
+}
+
+export interface ApiTransactionDetail {
+  id: string;
+  type: 'withdrawal' | 'received' | 'sent';
+  title: string;
+  amount: number;
+  date: string;
+  status: string;
+  ref: string;
+  bankDetails?: string;
+  note?: string;
+  jobRef?: string;
+  avatar?: string;
+}
+
 export const api = {
   auth: {
     login: (phone: string, password: string) =>
@@ -230,11 +317,29 @@ export const api = {
 
   videos: {
     list: () => request<ApiVideo[]>('/videos'),
+    uploadConfig: () =>
+      request<{ configured: boolean; cloudName: string; uploadPreset: string }>(
+        '/videos/upload-config'
+      ),
+    upload: async (file: File) => {
+      const token = getToken();
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/videos/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new ApiError(data.error || 'Upload failed', res.status);
+      return data as { videoUrl: string | null; thumbnail: string; mediaType: string };
+    },
     create: (data: {
       title: string;
       skillCategory?: string;
       description?: string;
       thumbnail?: string;
+      videoUrl?: string;
       duration?: string;
     }) =>
       request<ApiVideo>('/videos', {
@@ -257,6 +362,31 @@ export const api = {
 
   wallet: {
     get: () => request<ApiWallet>('/wallet'),
+    stats: () =>
+      request<{
+        weeklyEarned: number;
+        formattedWeeklyEarned: string;
+        jobsCompleted: number;
+      }>('/wallet/stats'),
+    getTransaction: (id: string) =>
+      request<ApiTransactionDetail>(`/wallet/transactions/${id}`),
+    paystackInitialize: (amount: number) =>
+      request<{
+        reference: string;
+        authorizationUrl: string | null;
+        devMode: boolean;
+        paystackConfigured: boolean;
+      }>('/wallet/paystack/initialize', {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+      }),
+    paystackVerify: (reference: string) =>
+      request<{
+        success: boolean;
+        balance: number;
+        formattedBalance: string;
+        alreadyProcessed?: boolean;
+      }>(`/wallet/paystack/verify?reference=${encodeURIComponent(reference)}`),
     add: (amount: number, description?: string) =>
       request<{ balance: number; formattedBalance: string }>('/wallet/add', {
         method: 'POST',
@@ -311,6 +441,57 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       }),
+    downloadPdf: async (id: string) => {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/invoices/${id}/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new ApiError('Failed to download PDF', res.status);
+      return res.blob();
+    },
+  },
+
+  stories: {
+    list: () => request<ApiStoryGroup[]>('/stories'),
+    feed: () => request<ApiStoryRing[]>('/stories/feed'),
+    create: (data: {
+      mediaUrl: string;
+      text?: string;
+      skillTag?: string;
+      mediaType?: string;
+    }) =>
+      request<ApiStory>('/stories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  challenges: {
+    list: () => request<ApiChallenge[]>('/challenges'),
+    featured: () => request<ApiChallenge | null>('/challenges/featured'),
+    join: (id: string) =>
+      request<{ success: boolean }>(`/challenges/${id}/join`, { method: 'POST' }),
+  },
+
+  explore: {
+    get: (params?: { category?: string; q?: string }) => {
+      const qs = new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params || {}).filter(([, v]) => v)
+        ) as Record<string, string>
+      ).toString();
+      return request<ApiExploreData>(`/explore${qs ? `?${qs}` : ''}`);
+    },
+  },
+
+  workers: {
+    nearby: (params?: { lat?: number; lng?: number; skill?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.lat) qs.set('lat', String(params.lat));
+      if (params?.lng) qs.set('lng', String(params.lng));
+      if (params?.skill) qs.set('skill', params.skill);
+      return request<ApiNearbyWorker[]>(`/workers/nearby?${qs.toString()}`);
+    },
   },
 };
 

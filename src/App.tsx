@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './context/AuthContext';
 import { useAppNavigation } from './hooks/useAppNavigation';
+import { useWebSocket } from './hooks/useWebSocket';
 import { Screen } from './navigation/screenRoutes';
 import { BottomNav, TabType } from './components/ui/BottomNav';
 import { OnboardingSlides } from './pages/OnboardingSlides';
@@ -104,6 +105,8 @@ export function App() {
     setWalletActionType,
     setIsVideoCall,
   });
+
+  useWebSocket(isAuthenticated);
 
   const { data: chats = [] } = useQuery({
     queryKey: ['chats'],

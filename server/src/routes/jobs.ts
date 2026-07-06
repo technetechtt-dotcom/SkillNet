@@ -120,7 +120,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       description,
       location,
       paymentAmount,
-      paymentCurrency = 'NGN',
+      paymentCurrency = 'ZAR',
       paymentType,
       requiredSkills = [],
       isUrgent = false,
