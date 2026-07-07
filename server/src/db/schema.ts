@@ -26,6 +26,11 @@ export const users = pgTable('users', {
   latitude: real('latitude'),
   longitude: real('longitude'),
   availabilityStatus: varchar('availability_status', { length: 20 }).default('available'),
+  role: varchar('role', { length: 20 }).default('user').notNull(),
+  accountStatus: varchar('account_status', { length: 20 }).default('active').notNull(),
+  blockedUntil: timestamp('blocked_until'),
+  blockReason: text('block_reason'),
+  blockedAt: timestamp('blocked_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -38,6 +43,20 @@ export const userSkills = pgTable('user_skills', {
   icon: varchar('icon', { length: 10 }).default('🔧').notNull(),
   level: varchar('level', { length: 20 }).default('beginner').notNull(),
 });
+
+export const userFollows = pgTable(
+  'user_follows',
+  {
+    followerId: uuid('follower_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    followingId: uuid('following_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.followerId, table.followingId] })]
+);
 
 export const jobs = pgTable('jobs', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -96,6 +115,9 @@ export const videos = pgTable('videos', {
   comments: integer('comments').default(0).notNull(),
   shares: integer('shares').default(0).notNull(),
   duration: varchar('duration', { length: 10 }),
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  moderationReason: text('moderation_reason'),
+  moderatedAt: timestamp('moderated_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -198,6 +220,9 @@ export const stories = pgTable('stories', {
   text: text('text'),
   skillTag: varchar('skill_tag', { length: 50 }),
   expiresAt: timestamp('expires_at').notNull(),
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  moderationReason: text('moderation_reason'),
+  moderatedAt: timestamp('moderated_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -240,5 +265,77 @@ export const challengeWinners = pgTable('challenge_winners', {
   rank: integer('rank').notNull(),
 });
 
+export const videoLikes = pgTable(
+  'video_likes',
+  {
+    userId: uuid('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    videoId: uuid('video_id')
+      .references(() => videos.id, { onDelete: 'cascade' })
+      .notNull(),
+    reaction: varchar('reaction', { length: 20 }).default('like').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.videoId] })]
+);
+
+export const videoComments = pgTable('video_comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  videoId: uuid('video_id')
+    .references(() => videos.id, { onDelete: 'cascade' })
+    .notNull(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  text: text('text').notNull(),
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const videoShares = pgTable('video_shares', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  videoId: uuid('video_id')
+    .references(() => videos.id, { onDelete: 'cascade' })
+    .notNull(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const moderationLogs = pgTable('moderation_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  adminId: uuid('admin_id')
+    .references(() => users.id, { onDelete: 'set null' }),
+  targetType: varchar('target_type', { length: 30 }).notNull(),
+  targetId: varchar('target_id', { length: 100 }).notNull(),
+  action: varchar('action', { length: 30 }).notNull(),
+  reason: text('reason'),
+  metadata: jsonb('metadata').$type<Record<string, string>>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const programs = pgTable('programs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: varchar('slug', { length: 100 }).notNull().unique(),
+  title: varchar('title', { length: 200 }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(),
+  provider: varchar('provider', { length: 100 }),
+  description: text('description'),
+  location: varchar('location', { length: 200 }),
+  duration: varchar('duration', { length: 100 }),
+  stipend: varchar('stipend', { length: 100 }),
+  fundingAmount: varchar('funding_amount', { length: 100 }),
+  nqf: varchar('nqf', { length: 50 }),
+  closingDate: timestamp('closing_date'),
+  spots: integer('spots'),
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  featured: boolean('featured').default(false).notNull(),
+  metadata: jsonb('metadata').$type<Record<string, string>>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
+export type Program = typeof programs.$inferSelect;

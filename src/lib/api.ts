@@ -61,6 +61,7 @@ export interface ApiUser {
   completedJobs: number;
   rating: number;
   isOnline: boolean;
+  role?: string;
   skills: {
     id: string;
     name: string;
@@ -246,6 +247,240 @@ export interface ApiTransactionDetail {
   avatar?: string;
 }
 
+export interface ApiProgram {
+  id: string;
+  slug: string;
+  title: string;
+  type: string;
+  provider: string | null;
+  description: string | null;
+  location: string | null;
+  duration: string | null;
+  stipend: string | null;
+  fundingAmount: string | null;
+  nqf: string | null;
+  closingDate: string | null;
+  spots: number | null;
+  status: string;
+  featured: boolean;
+  createdAt: string;
+}
+
+export interface AdminStats {
+  counts: {
+    users: number;
+    jobs: number;
+    videos: number;
+    stories: number;
+    challenges: number;
+    programs: number;
+    transactions: number;
+    walletBalance: number;
+  };
+  recentUsers: {
+    id: string;
+    name: string;
+    phone: string;
+    role: string;
+    createdAt: string;
+  }[];
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  phone: string;
+  location: string | null;
+  role: string;
+  accountStatus: string;
+  blockedUntil: string | null;
+  blockReason: string | null;
+  trustScore: number;
+  rating: number;
+  isOnline: boolean;
+  createdAt: string;
+  followerCount?: number;
+  followingCount?: number;
+}
+
+export interface AdminVideo {
+  id: string;
+  title: string;
+  description: string | null;
+  skillCategory: string | null;
+  thumbnail: string | null;
+  videoUrl: string | null;
+  likes: number;
+  comments: number;
+  shares: number;
+  duration: string | null;
+  status: string;
+  moderationReason: string | null;
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+  createdAt: string;
+}
+
+export interface AdminStory {
+  id: string;
+  text: string | null;
+  skillTag: string | null;
+  mediaType: string;
+  mediaUrl: string;
+  status: string;
+  moderationReason: string | null;
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface AdminJob {
+  id: string;
+  title: string;
+  location: string;
+  paymentAmount: number;
+  paymentCurrency: string;
+  isUrgent: boolean;
+  employerId: string;
+  employerName: string | null;
+  createdAt: string;
+}
+
+export interface AdminChallenge {
+  id: string;
+  name: string;
+  hashtag: string;
+  emoji: string;
+  description: string | null;
+  category: string;
+  prize: string | null;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  featured: boolean;
+}
+
+export interface AdminTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  description: string | null;
+  status: string;
+  reference: string | null;
+  createdAt: string;
+  userName: string | null;
+}
+
+export interface AdminEngagement {
+  likes: {
+    userId: string;
+    userName: string | null;
+    userAvatar: string | null;
+    reaction: string;
+    createdAt: string;
+  }[];
+  comments: {
+    id: string;
+    userId: string;
+    userName: string | null;
+    userAvatar: string | null;
+    text: string;
+    status: string;
+    createdAt: string;
+  }[];
+  shares: {
+    id: string;
+    userId: string;
+    userName: string | null;
+    userAvatar: string | null;
+    createdAt: string;
+  }[];
+}
+
+export interface AdminChatSummary {
+  chatId: string;
+  participants: {
+    userId: string;
+    name: string | null;
+    phone: string | null;
+    avatar: string | null;
+  }[];
+  lastMessage: {
+    text: string;
+    senderId: string;
+    senderName: string | null;
+    createdAt: string;
+    timeAgo: string;
+  } | null;
+  messageCount: number;
+}
+
+export interface AdminChatDetail {
+  chatId: string;
+  participants: {
+    userId: string;
+    name: string | null;
+    phone: string | null;
+    avatar: string | null;
+  }[];
+  messages: {
+    id: string;
+    senderId: string;
+    senderName: string | null;
+    senderAvatar: string | null;
+    text: string;
+    imageUrl: string | null;
+    isRead: boolean;
+    createdAt: string;
+    timeAgo: string;
+  }[];
+}
+
+export interface ModerationLog {
+  id: string;
+  targetType: string;
+  targetId: string;
+  action: string;
+  reason: string | null;
+  createdAt: string;
+  adminName: string | null;
+}
+
+export interface AdminFollowRelation {
+  followerId: string;
+  followerName: string;
+  followerPhone: string;
+  followerAvatar: string | null;
+  followingId: string;
+  followingName: string;
+  followingPhone: string;
+  followingAvatar: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserSocial {
+  user: { id: string; name: string; phone: string };
+  followerCount: number;
+  followingCount: number;
+  followers: {
+    userId: string;
+    name: string;
+    phone: string;
+    avatar: string | null;
+    createdAt: string;
+  }[];
+  following: {
+    userId: string;
+    name: string;
+    phone: string;
+    avatar: string | null;
+    createdAt: string;
+  }[];
+}
+
 export const api = {
   auth: {
     login: (phone: string, password: string) =>
@@ -281,6 +516,22 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ skills }),
       }),
+    follow: (id: string) =>
+      request<{ success: boolean; following: boolean }>(`/users/${id}/follow`, {
+        method: 'POST',
+      }),
+    unfollow: (id: string) =>
+      request<{ success: boolean; following: boolean }>(`/users/${id}/follow`, {
+        method: 'DELETE',
+      }),
+    followers: (id: string) =>
+      request<
+        { userId: string; name: string; avatar: string | null; phone: string }[]
+      >(`/users/${id}/followers`),
+    following: (id: string) =>
+      request<
+        { userId: string; name: string; avatar: string | null; phone: string }[]
+      >(`/users/${id}/following`),
   },
 
   jobs: {
@@ -346,6 +597,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    like: (id: string, reaction = 'like') =>
+      request<{ success: boolean; reaction: string }>(`/videos/${id}/like`, {
+        method: 'POST',
+        body: JSON.stringify({ reaction }),
+      }),
+    comment: (id: string, text: string) =>
+      request<{ id: string }>(`/videos/${id}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      }),
+    share: (id: string) =>
+      request<{ success: boolean }>(`/videos/${id}/share`, { method: 'POST' }),
   },
 
   notifications: {
@@ -491,6 +754,183 @@ export const api = {
       if (params?.lng) qs.set('lng', String(params.lng));
       if (params?.skill) qs.set('skill', params.skill);
       return request<ApiNearbyWorker[]>(`/workers/nearby?${qs.toString()}`);
+    },
+  },
+
+  programs: {
+    list: (params?: { type?: string; featured?: boolean }) => {
+      const qs = new URLSearchParams();
+      if (params?.type) qs.set('type', params.type);
+      if (params?.featured) qs.set('featured', 'true');
+      return request<ApiProgram[]>(`/programs${qs.toString() ? `?${qs}` : ''}`);
+    },
+    get: (slug: string) => request<ApiProgram>(`/programs/${slug}`),
+  },
+
+  admin: {
+    stats: () => request<AdminStats>('/admin/stats'),
+    users: {
+      list: (params?: { q?: string; role?: string }) => {
+        const qs = new URLSearchParams();
+        if (params?.q) qs.set('q', params.q);
+        if (params?.role) qs.set('role', params.role);
+        return request<AdminUser[]>(`/admin/users${qs.toString() ? `?${qs}` : ''}`);
+      },
+      get: (id: string) => request<ApiUser>(`/admin/users/${id}`),
+      create: (data: {
+        phone: string;
+        password: string;
+        name: string;
+        location?: string;
+        role?: string;
+      }) =>
+        request<ApiUser>('/admin/users', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
+      update: (
+        id: string,
+        data: Partial<{
+          name: string;
+          location: string;
+          bio: string;
+          role: string;
+          trustScore: number;
+          rating: number;
+          availabilityStatus: string;
+        }>
+      ) =>
+        request<ApiUser>(`/admin/users/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/admin/users/${id}`, { method: 'DELETE' }),
+      content: (id: string) =>
+        request<{ videos: AdminVideo[]; stories: AdminStory[] }>(
+          `/admin/users/${id}/content`
+        ),
+      social: (id: string) =>
+        request<AdminUserSocial>(`/admin/users/${id}/social`),
+    },
+    follows: {
+      list: (q?: string) =>
+        request<AdminFollowRelation[]>(
+          `/admin/follows${q ? `?q=${encodeURIComponent(q)}` : ''}`
+        ),
+    },
+    videos: {
+      list: (params?: { userId?: string }) => {
+        const qs = params?.userId
+          ? `?userId=${encodeURIComponent(params.userId)}`
+          : '';
+        return request<AdminVideo[]>(`/admin/videos${qs}`);
+      },
+      get: (id: string) => request<AdminVideo>(`/admin/videos/${id}`),
+      engagement: (id: string) =>
+        request<AdminEngagement>(`/admin/videos/${id}/engagement`),
+      moderate: (
+        id: string,
+        data: { status: 'active' | 'blocked' | 'removed'; reason?: string }
+      ) =>
+        request<AdminVideo>(`/admin/videos/${id}/moderate`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/admin/videos/${id}`, { method: 'DELETE' }),
+    },
+    stories: {
+      list: (params?: { userId?: string }) => {
+        const qs = params?.userId
+          ? `?userId=${encodeURIComponent(params.userId)}`
+          : '';
+        return request<AdminStory[]>(`/admin/stories${qs}`);
+      },
+      get: (id: string) => request<AdminStory>(`/admin/stories/${id}`),
+      moderate: (
+        id: string,
+        data: { status: 'active' | 'blocked' | 'removed'; reason?: string }
+      ) =>
+        request<AdminStory>(`/admin/stories/${id}/moderate`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/admin/stories/${id}`, { method: 'DELETE' }),
+    },
+    jobs: {
+      list: () => request<AdminJob[]>('/admin/jobs'),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/admin/jobs/${id}`, { method: 'DELETE' }),
+    },
+    challenges: {
+      list: () => request<AdminChallenge[]>('/admin/challenges'),
+      create: (data: Partial<AdminChallenge> & {
+        name: string;
+        hashtag: string;
+        category: string;
+        startsAt: string;
+        endsAt: string;
+      }) =>
+        request<AdminChallenge>('/admin/challenges', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
+      update: (id: string, data: Partial<AdminChallenge>) =>
+        request<AdminChallenge>(`/admin/challenges/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/admin/challenges/${id}`, {
+          method: 'DELETE',
+        }),
+    },
+    programs: {
+      list: () => request<ApiProgram[]>('/admin/programs'),
+      create: (data: Partial<ApiProgram> & { slug: string; title: string; type: string }) =>
+        request<ApiProgram>('/admin/programs', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
+      update: (id: string, data: Partial<ApiProgram>) =>
+        request<ApiProgram>(`/admin/programs/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/admin/programs/${id}`, {
+          method: 'DELETE',
+        }),
+    },
+    transactions: {
+      list: () => request<AdminTransaction[]>('/admin/transactions'),
+    },
+    moderation: {
+      blockUser: (
+        id: string,
+        data: { reason?: string; duration?: string; blockedUntil?: string }
+      ) =>
+        request<ApiUser>(`/admin/users/${id}/block`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      unblockUser: (id: string) =>
+        request<ApiUser>(`/admin/users/${id}/unblock`, { method: 'PATCH' }),
+      moderateComment: (
+        id: string,
+        data: { status: 'active' | 'blocked' | 'removed'; reason?: string }
+      ) =>
+        request<{ id: string; status: string }>(`/admin/comments/${id}/moderate`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        }),
+      logs: () => request<ModerationLog[]>('/admin/moderation/logs'),
+    },
+    messages: {
+      list: () => request<AdminChatSummary[]>('/admin/messages'),
+      get: (chatId: string) => request<AdminChatDetail>(`/admin/messages/${chatId}`),
     },
   },
 };

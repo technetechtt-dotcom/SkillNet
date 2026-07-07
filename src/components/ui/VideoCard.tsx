@@ -36,6 +36,7 @@ const REACTIONS = [
 interface VideoCardProps {
   video: Video;
   onLike?: () => void;
+  onReaction?: (emoji: string) => void;
   onComment?: () => void;
   onShare?: () => void;
   onFollow?: () => void;
@@ -44,6 +45,7 @@ interface VideoCardProps {
 export function VideoCard({
   video,
   onLike,
+  onReaction,
   onComment,
   onShare,
   onFollow,
@@ -66,6 +68,7 @@ export function VideoCard({
     } else {
       setActiveReaction(emoji);
       setIsLiked(true);
+      onReaction?.(emoji);
     }
     setShowReactions(false);
   };

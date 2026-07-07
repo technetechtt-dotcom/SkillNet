@@ -9,10 +9,15 @@
     "dev:server": "tsx watch server/src/index.ts",
     "build": "vite build",
     "build:server": "tsc -p server/tsconfig.json",
+    "start": "node server/dist/index.js",
+    "start:server": "tsx server/src/index.ts",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "preview": "vite preview",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx server/src/db/seed.ts"
+    "db:seed": "tsx server/src/db/seed.ts",
+    "db:ensure-admin": "tsx server/src/db/ensure-admin.ts",
+    "db:seed-engagement": "tsx server/src/db/seed-engagement.ts",
+    "db:seed-follows": "tsx server/src/db/seed-follows.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
@@ -23,7 +28,9 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.2",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.5.1",
     "framer-motion": "^11.5.4",
+    "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "0.522.0",
     "multer": "^2.2.0",

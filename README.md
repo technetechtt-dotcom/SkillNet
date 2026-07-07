@@ -86,28 +86,58 @@ Sign in with country code **+27** (South Africa). Example: select +27 and enter 
 | `npm run dev:client` | Frontend only |
 | `npm run dev:server` | API only |
 | `npm run build` | Build frontend for production |
+| `npm run build:server` | Compile API TypeScript |
+| `npm start` | Run production API |
 | `npm run db:push` | Push schema to Neon |
 | `npm run db:seed` | Seed demo data |
+| `npm run db:ensure-admin` | Create admin user + default programs |
+
+## Deployment
+
+### API (Docker / Render / Railway)
+
+1. Set production env vars: `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL`, `NODE_ENV=production`
+2. Optional: `PAYSTACK_SECRET_KEY`, Cloudinary vars for uploads
+3. Build and run:
+
+```bash
+npm ci
+npm run build:server
+node server/dist/index.js
+```
+
+Or use the included `Dockerfile` / `render.yaml`.
+
+**Notes:**
+- `POST /api/wallet/add` is disabled in production (use Paystack top-up)
+- `JWT_SECRET` is required when `NODE_ENV=production`
+- Set `CLIENT_URL` to your frontend origin (comma-separated for multiple)
+
+### Frontend (Vercel / Netlify)
+
+1. `npm run build` → deploy `dist/`
+2. Point `VITE_API_URL` at your API, or configure proxy rewrites in `vercel.json`
+3. Set `VITE_WS_URL` for WebSocket if not on same host
+
+## Admin Dashboard
+
+After `npm run db:ensure-admin`:
+
+| Role | Phone | Password |
+|------|-------|----------|
+| Admin | +27800000001 | password123 |
+
+Open `/admin` in the browser.
 
 ## What's Production-Ready
 
 - JWT authentication with bcrypt password hashing
+- Helmet, rate limiting, production env guards
 - PostgreSQL persistence via Neon
 - Real job marketplace (list, post, apply, save)
-- Wallet with add/send/withdraw transactions
-- Chat messaging with start-conversation flow
-- Notifications from database
-- User profiles (view, edit, skills management)
-- Video portfolio (list + post to API)
-- User search for new messages
-- GitHub Actions CI on push/PR
-
-## Still UI-Only (future work)
-
-- Video file upload to cloud storage (S3/Cloudinary)
-- WebRTC voice/video calls
-- Real-time chat (WebSockets)
-- URL routing (react-router)
-- Mobile money integrations (M-Pesa, Paystack)
-- Push notifications
-- Invoices API
+- Wallet with Paystack top-up (dev-only manual add)
+- Chat messaging + WebSockets
+- Video engagement (like, comment, share, follow)
+- Admin dashboard with moderation
+- Government programs API
+- GitHub Actions CI (frontend + server build)

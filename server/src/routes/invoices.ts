@@ -5,6 +5,7 @@ import { invoices, users } from '../db/schema.js';
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { formatPayment } from '../utils/format.js';
 import { generateInvoicePdf } from '../utils/pdf.js';
+import { param } from '../utils/params.js';
 
 const router = Router();
 
@@ -67,7 +68,7 @@ router.get('/:id/pdf', requireAuth, async (req: AuthRequest, res) => {
     const [inv] = await db
       .select()
       .from(invoices)
-      .where(eq(invoices.id, req.params.id));
+      .where(eq(invoices.id, param(req, 'id')));
 
     if (!inv || inv.userId !== req.userId) {
       res.status(404).json({ error: 'Invoice not found' });
@@ -108,7 +109,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
     const [inv] = await db
       .select()
       .from(invoices)
-      .where(eq(invoices.id, req.params.id));
+      .where(eq(invoices.id, param(req, 'id')));
 
     if (!inv || inv.userId !== req.userId) {
       res.status(404).json({ error: 'Invoice not found' });
@@ -169,7 +170,7 @@ router.patch('/:id/status', requireAuth, async (req: AuthRequest, res) => {
     const [inv] = await db
       .select()
       .from(invoices)
-      .where(eq(invoices.id, req.params.id));
+      .where(eq(invoices.id, param(req, 'id')));
 
     if (!inv || inv.userId !== req.userId) {
       res.status(404).json({ error: 'Invoice not found' });
@@ -179,7 +180,7 @@ router.patch('/:id/status', requireAuth, async (req: AuthRequest, res) => {
     const [updated] = await db
       .update(invoices)
       .set({ status })
-      .where(eq(invoices.id, req.params.id))
+      .where(eq(invoices.id, param(req, 'id')))
       .returning();
 
     res.json(serializeInvoice(updated));

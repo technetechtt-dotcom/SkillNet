@@ -10,6 +10,7 @@ import {
   verifyPayment,
 } from '../utils/paystack.js';
 import { broadcastToUsers } from '../ws.js';
+import { isProduction } from '../utils/env.js';
 
 const router = Router();
 
@@ -259,6 +260,10 @@ router.get('/paystack/verify', requireAuth, async (req: AuthRequest, res) => {
 });
 
 router.post('/add', requireAuth, async (req: AuthRequest, res) => {
+  if (isProduction) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
   try {
     const { amount, description } = req.body;
     const numAmount = Number(amount);

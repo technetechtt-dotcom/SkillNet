@@ -61,7 +61,7 @@ export function WalletWithdraw({ onBack, onSuccess }: WalletWithdrawProps) {
             Enter Amount
           </p>
           <div className="flex items-center justify-center text-4xl font-bold text-text-primary mb-4">
-            <span className="text-text-secondary mr-1">₦</span>
+            <span className="text-text-secondary mr-1">R</span>
             <input
               type="number"
               value={amount}
@@ -73,7 +73,7 @@ export function WalletWithdraw({ onBack, onSuccess }: WalletWithdrawProps) {
           <p className="text-sm text-text-secondary">
             Available Balance:{' '}
             <span className="font-bold text-text-primary">
-              {wallet?.formattedBalance || '₦0'}
+              {wallet?.formattedBalance || 'R0'}
             </span>
           </p>
           {error && (

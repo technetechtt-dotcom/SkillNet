@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import { userSkills, users } from '../db/schema.js';
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serialize.js';
+import { param } from '../utils/params.js';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.get('/search', requireAuth, async (req: AuthRequest, res) => {
 });
 
 router.get('/:id', requireAuth, async (req, res) => {
-  const user = await serializeUser(req.params.id);
+  const user = await serializeUser(param(req, 'id'));
   if (!user) {
     res.status(404).json({ error: 'User not found' });
     return;

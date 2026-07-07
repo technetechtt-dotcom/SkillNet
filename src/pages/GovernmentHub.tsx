@@ -6,30 +6,79 @@ import {
   ShieldCheckIcon,
   ChevronRightIcon,
   UsersIcon,
-  CoinsIcon } from
-'lucide-react';
+  CoinsIcon,
+} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { ActionButton } from '../components/ui/ActionButton';
+import { api, ApiProgram } from '../lib/api';
+
 interface GovernmentHubProps {
   onBack: () => void;
   onProgramClick?: (id: string) => void;
 }
+
+const PROGRAM_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
+  grants: CoinsIcon,
+  seta: GraduationCapIcon,
+  yes: UsersIcon,
+  coida: ShieldCheckIcon,
+};
+
+function programBadge(program: ApiProgram): string {
+  if (program.fundingAmount) return program.fundingAmount;
+  if (program.spots != null) return `${program.spots} Open Spots`;
+  if (program.stipend) return program.stipend;
+  return program.status === 'active' ? 'Open' : program.status;
+}
+
+function programStyles(type: string) {
+  if (type === 'grants') {
+    return {
+      hover: 'hover:border-primary/50',
+      iconBg: 'bg-primary/10',
+      iconText: 'text-primary',
+      badge: 'bg-primary/10 text-primary',
+    };
+  }
+  if (type === 'seta') {
+    return {
+      hover: 'hover:border-secondary/50',
+      iconBg: 'bg-secondary/10',
+      iconText: 'text-secondary',
+      badge: 'bg-secondary/10 text-secondary',
+    };
+  }
+  if (type === 'yes') {
+    return {
+      hover: 'hover:border-accent/50',
+      iconBg: 'bg-accent/10',
+      iconText: 'text-accent',
+      badge: 'bg-accent/10 text-accent',
+    };
+  }
+  return {
+    hover: 'hover:border-primary/50',
+    iconBg: 'bg-primary/10',
+    iconText: 'text-primary',
+    badge: 'bg-primary/10 text-primary',
+  };
+}
+
 export function GovernmentHub({ onBack, onProgramClick }: GovernmentHubProps) {
-  const [activeToast, setActiveToast] = useState<string | null>(null);
+  const { data: programs = [], isLoading } = useQuery({
+    queryKey: ['programs'],
+    queryFn: () => api.programs.list(),
+  });
+
   return (
     <div className="flex flex-col h-full bg-background relative">
-      {/* Toast */}
-      {activeToast &&
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-surface border border-border text-text-primary px-4 py-2 rounded-full shadow-lg z-50 text-sm font-bold animate-fade-in">
-          {activeToast}
-        </div>
-      }
-
-      {/* Header */}
       <div className="bg-surface px-4 py-4 flex items-center gap-3 flex-shrink-0 border-b border-border shadow-sm">
         <button
           onClick={onBack}
           className="p-2 -ml-2 text-text-primary min-h-[48px] min-w-[48px] flex items-center justify-center rounded-full hover:bg-background transition-colors">
-          
           <ArrowLeftIcon className="w-6 h-6" />
         </button>
         <div>
@@ -43,7 +92,6 @@ export function GovernmentHub({ onBack, onProgramClick }: GovernmentHubProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Hero */}
         <div className="bg-gradient-to-br from-secondary via-orange-500 to-red-500 rounded-3xl p-6 text-white shadow-elevated relative overflow-hidden mb-2">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
           <div className="relative z-10">
@@ -60,87 +108,57 @@ export function GovernmentHub({ onBack, onProgramClick }: GovernmentHubProps) {
               size="sm"
               className="bg-white/20 border-white/30 text-white hover:bg-white/30"
               onClick={() => onProgramClick?.('id-link')}>
-              
               Link ID Number
             </ActionButton>
           </div>
         </div>
 
-        {/* Programs List */}
         <h3 className="font-bold text-text-primary text-lg px-2 mt-2">
           Available Programs
         </h3>
 
-        {/* Grants & Funding (replaces EPWP) */}
-        <div
-          onClick={() => onProgramClick?.('grants')}
-          className="bg-surface rounded-3xl border border-border p-4 shadow-sm flex items-start gap-4 cursor-pointer hover:border-primary/50 transition-colors active:scale-[0.98]">
-          
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <CoinsIcon className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-text-primary text-base mb-1">
-              Grants & Funding
-            </h4>
-            <p className="text-xs text-text-secondary font-medium mb-2 line-clamp-2">
-              Browse active grants and funding from NEF, SEFA, NYDA, NSFAS and
-              private foundations.
-            </p>
-            <span className="inline-block bg-success/10 text-success text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-              R 2.4B Available
-            </span>
-          </div>
-          <ChevronRightIcon className="w-5 h-5 text-text-secondary self-center" />
-        </div>
+        {isLoading && (
+          <div className="bg-surface rounded-3xl border border-border p-6 animate-pulse h-24" />
+        )}
 
-        {/* SETA Learnerships */}
-        <div
-          onClick={() => onProgramClick?.('seta')}
-          className="bg-surface rounded-3xl border border-border p-4 shadow-sm flex items-start gap-4 cursor-pointer hover:border-secondary/50 transition-colors active:scale-[0.98]">
-          
-          <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-            <GraduationCapIcon className="w-6 h-6 text-secondary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-text-primary text-base mb-1">
-              SETA Learnerships
-            </h4>
-            <p className="text-xs text-text-secondary font-medium mb-2 line-clamp-2">
-              Apply for accredited learnerships across 21 SETAs. Earn a stipend
-              while gaining NQF-aligned qualifications.
+        {!isLoading && programs.length === 0 && (
+          <div className="bg-surface rounded-3xl border border-border p-6 text-center">
+            <p className="text-sm text-text-secondary font-medium">
+              No programs available yet. Check back soon.
             </p>
-            <span className="inline-block bg-secondary/10 text-secondary text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-              42 Open Learnerships
-            </span>
           </div>
-          <ChevronRightIcon className="w-5 h-5 text-text-secondary self-center" />
-        </div>
+        )}
 
-        {/* YES Program */}
-        <div
-          onClick={() => onProgramClick?.('yes')}
-          className="bg-surface rounded-3xl border border-border p-4 shadow-sm flex items-start gap-4 cursor-pointer hover:border-accent/50 transition-colors active:scale-[0.98]">
-          
-          <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-            <UsersIcon className="w-6 h-6 text-accent" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-text-primary text-base mb-1">
-              YES Youth Initiative
-            </h4>
-            <p className="text-xs text-text-secondary font-medium mb-2 line-clamp-2">
-              Youth Employment Service. 12-month quality work experience for
-              youth under 35.
-            </p>
-            <span className="inline-block bg-background border border-border text-text-secondary text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-              Verify Age Eligibility
-            </span>
-          </div>
-          <ChevronRightIcon className="w-5 h-5 text-text-secondary self-center" />
-        </div>
+        {programs.map((program) => {
+          const Icon = PROGRAM_ICONS[program.type] || LandmarkIcon;
+          const styles = programStyles(program.type);
+          return (
+            <div
+              key={program.id}
+              onClick={() => onProgramClick?.(program.slug)}
+              className={`bg-surface rounded-3xl border border-border p-4 shadow-sm flex items-start gap-4 cursor-pointer transition-colors active:scale-[0.98] ${styles.hover}`}>
+              <div
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${styles.iconBg}`}>
+                <Icon className={`w-6 h-6 ${styles.iconText}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-text-primary text-base mb-1">
+                  {program.title}
+                </h4>
+                <p className="text-xs text-text-secondary font-medium mb-2 line-clamp-2">
+                  {program.description ||
+                    `${program.provider || 'Government'} · ${program.location || 'South Africa'}`}
+                </p>
+                <span
+                  className={`inline-block text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${styles.badge}`}>
+                  {programBadge(program)}
+                </span>
+              </div>
+              <ChevronRightIcon className="w-5 h-5 text-text-secondary self-center" />
+            </div>
+          );
+        })}
 
-        {/* Compliance Section */}
         <h3 className="font-bold text-text-primary text-lg px-2 mt-6">
           Compliance & Safety
         </h3>
@@ -151,9 +169,7 @@ export function GovernmentHub({ onBack, onProgramClick }: GovernmentHubProps) {
               <ShieldCheckIcon className="w-5 h-5 text-success" />
             </div>
             <div>
-              <h4 className="font-bold text-text-primary">
-                COIDA Registration
-              </h4>
+              <h4 className="font-bold text-text-primary">COIDA Registration</h4>
               <p className="text-xs text-text-secondary">
                 Compensation Fund compliance
               </p>
@@ -170,13 +186,12 @@ export function GovernmentHub({ onBack, onProgramClick }: GovernmentHubProps) {
             size="sm"
             className="w-full mt-3"
             onClick={() => onProgramClick?.('coida')}>
-            
             Start Registration
           </ActionButton>
         </div>
 
         <div className="h-6" />
       </div>
-    </div>);
-
+    </div>
+  );
 }

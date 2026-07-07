@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { videos } from '../db/schema.js';
+import { videoComments, videoLikes, videoShares, videos } from '../db/schema.js';
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serialize.js';
 import {
@@ -64,6 +64,7 @@ router.get('/', requireAuth, async (_req, res) => {
     const allVideos = await db
       .select()
       .from(videos)
+      .where(eq(videos.status, 'active'))
       .orderBy(desc(videos.createdAt))
       .limit(50);
 
@@ -135,6 +136,98 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
   } catch (err) {
     console.error('Create video error:', err);
     res.status(500).json({ error: 'Failed to create video' });
+  }
+});
+
+router.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const videoId = String(req.params.id);
+    const { reaction = 'like' } = req.body;
+
+    const [existing] = await db
+      .select()
+      .from(videoLikes)
+      .where(
+        and(
+          eq(videoLikes.videoId, videoId),
+          eq(videoLikes.userId, req.userId!)
+        )
+      );
+
+    if (existing) {
+      await db
+        .update(videoLikes)
+        .set({ reaction })
+        .where(
+          and(
+            eq(videoLikes.videoId, videoId),
+            eq(videoLikes.userId, req.userId!)
+          )
+        );
+    } else {
+      await db.insert(videoLikes).values({
+        videoId,
+        userId: req.userId!,
+        reaction,
+      });
+      await db
+        .update(videos)
+        .set({ likes: sql`${videos.likes} + 1` })
+        .where(eq(videos.id, videoId));
+    }
+
+    res.json({ success: true, reaction });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to like video' });
+  }
+});
+
+router.post('/:id/comment', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const videoId = String(req.params.id);
+    const { text } = req.body;
+    if (!text?.trim()) {
+      res.status(400).json({ error: 'Comment text is required' });
+      return;
+    }
+
+    const [comment] = await db
+      .insert(videoComments)
+      .values({
+        videoId,
+        userId: req.userId!,
+        text: text.trim(),
+      })
+      .returning();
+
+    await db
+      .update(videos)
+      .set({ comments: sql`${videos.comments} + 1` })
+      .where(eq(videos.id, videoId));
+
+    res.status(201).json(comment);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to comment' });
+  }
+});
+
+router.post('/:id/share', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const videoId = String(req.params.id);
+
+    await db.insert(videoShares).values({
+      videoId,
+      userId: req.userId!,
+    });
+
+    await db
+      .update(videos)
+      .set({ shares: sql`${videos.shares} + 1` })
+      .where(eq(videos.id, videoId));
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to share video' });
   }
 });
 

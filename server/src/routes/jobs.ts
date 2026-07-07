@@ -10,6 +10,7 @@ import {
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { formatPayment, timeAgo } from '../utils/format.js';
 import { serializeUser } from '../utils/serialize.js';
+import { param } from '../utils/params.js';
 
 const router = Router();
 
@@ -95,7 +96,7 @@ router.get('/saved', requireAuth, async (req: AuthRequest, res) => {
 
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const [job] = await db.select().from(jobs).where(eq(jobs.id, req.params.id));
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, param(req, 'id')));
     if (!job) {
       res.status(404).json({ error: 'Job not found' });
       return;
@@ -156,7 +157,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 router.post('/:id/apply', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { message } = req.body;
-    const jobId = req.params.id;
+    const jobId = param(req, 'id');
 
     const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId));
     if (!job) {
@@ -210,7 +211,7 @@ router.post('/:id/save', requireAuth, async (req: AuthRequest, res) => {
   try {
     await db
       .insert(savedJobs)
-      .values({ userId: req.userId!, jobId: req.params.id })
+      .values({ userId: req.userId!, jobId: param(req, 'id') })
       .onConflictDoNothing();
 
     res.json({ success: true });
@@ -227,7 +228,7 @@ router.delete('/:id/save', requireAuth, async (req: AuthRequest, res) => {
       .where(
         and(
           eq(savedJobs.userId, req.userId!),
-          eq(savedJobs.jobId, req.params.id)
+          eq(savedJobs.jobId, param(req, 'id'))
         )
       );
 

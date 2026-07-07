@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { userSkills, users, wallets } from '../db/schema.js';
 import { hashPassword, signToken, verifyPassword } from '../utils/auth.js';
+import { isUserBlocked } from '../utils/moderation.js';
 import { serializeUser } from '../utils/serialize.js';
 
 const router = Router();
@@ -82,6 +83,16 @@ router.post('/login', async (req, res) => {
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ error: 'Invalid phone or password' });
+      return;
+    }
+
+    const blockStatus = await isUserBlocked(user.id);
+    if (blockStatus.blocked) {
+      res.status(403).json({
+        error: 'Your account has been blocked',
+        reason: blockStatus.reason,
+        blockedUntil: blockStatus.blockedUntil?.toISOString() || null,
+      });
       return;
     }
 

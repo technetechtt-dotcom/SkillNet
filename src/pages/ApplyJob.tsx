@@ -132,7 +132,7 @@ export function ApplyJob({ jobId, onBack, onSubmit }: ApplyJobProps) {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-text-secondary font-bold">₦</span>
+                    <span className="text-text-secondary font-bold">R</span>
                   </div>
                   <input
                     type="text"

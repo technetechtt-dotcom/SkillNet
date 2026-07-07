@@ -14,7 +14,7 @@ router.get('/', requireAuth, async (_req, res) => {
     const activeStories = await db
       .select()
       .from(stories)
-      .where(gt(stories.expiresAt, now))
+      .where(and(gt(stories.expiresAt, now), eq(stories.status, 'active')))
       .orderBy(desc(stories.createdAt));
 
     const grouped = new Map<
@@ -65,7 +65,7 @@ router.get('/feed', requireAuth, async (_req, res) => {
     const activeStories = await db
       .select()
       .from(stories)
-      .where(gt(stories.expiresAt, now))
+      .where(and(gt(stories.expiresAt, now), eq(stories.status, 'active')))
       .orderBy(desc(stories.createdAt));
 
     const seen = new Set<string>();

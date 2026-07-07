@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import { notifications } from '../db/schema.js';
 import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { timeAgo } from '../utils/format.js';
+import { param } from '../utils/params.js';
 
 const router = Router();
 
@@ -38,7 +39,7 @@ router.patch('/:id/read', requireAuth, async (req: AuthRequest, res) => {
     await db
       .update(notifications)
       .set({ isRead: true })
-      .where(eq(notifications.id, req.params.id));
+      .where(eq(notifications.id, param(req, 'id')));
 
     res.json({ success: true });
   } catch (err) {

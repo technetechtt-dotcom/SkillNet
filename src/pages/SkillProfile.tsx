@@ -214,7 +214,7 @@ export function SkillProfile({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-black text-text-primary">
-              {wallet?.formattedBalance || '₦0'}
+              {wallet?.formattedBalance || 'R0'}
             </span>
             <ChevronRightIcon className="w-5 h-5 text-text-secondary" />
           </div>

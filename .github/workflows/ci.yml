@@ -21,5 +21,7 @@ jobs:
 
       - run: npm run build
 
+      - run: npm run build:server
+
       - run: npm run lint
         continue-on-error: true

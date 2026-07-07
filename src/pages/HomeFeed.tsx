@@ -13,13 +13,14 @@ import {
   CompassIcon,
   TrophyIcon } from
 'lucide-react';
+import { FeedVideoCard } from '../components/FeedVideoCard';
 import { VideoCard } from '../components/ui/VideoCard';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { SkillTag } from '../components/ui/SkillTag';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Video, User } from '../types';
 import { formatCount } from '../utils/format';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { mapApiVideo } from '../lib/mappers';
 // ── For You Feed Data ──
@@ -337,7 +338,7 @@ const TRENDING_VIDEOS: (Video & {
     rating: 4.8,
     avatar: 'https://i.pravatar.cc/150?u=emeka'
   },
-  title: 'Building a house with ₦500k',
+  title: 'Building a house with R500k',
   skillCategory: 'Carpenter',
   description:
   'Part 1 of my budget home build series. Proving you can build quality on a tight budget! 🏗️💰',
@@ -476,44 +477,91 @@ const MOCK_STORIES = [
 // formatCount imported from utils/format
 // ── Following Tab Component ──
 function FollowingFeed() {
-  const [followedUsers, setFollowedUsers] = useState<string[]>([]);
-  const toggleFollow = (userId: string) => {
-    setFollowedUsers((prev) =>
-    prev.includes(userId) ?
-    prev.filter((id) => id !== userId) :
-    [...prev, userId]
-    );
-  };
+  const queryClient = useQueryClient();
+  const { data: me } = useQuery({
+    queryKey: ['users', 'me'],
+    queryFn: () => api.users.me(),
+  });
+  const { data: allVideos = [] } = useQuery({
+    queryKey: ['videos'],
+    queryFn: () => api.videos.list(),
+  });
+  const { data: following = [] } = useQuery({
+    queryKey: ['following', me?.id],
+    queryFn: () => api.users.following(me!.id),
+    enabled: !!me?.id,
+  });
+  const { data: suggestedUsers = [] } = useQuery({
+    queryKey: ['users', 'search'],
+    queryFn: () => api.users.search(),
+  });
+
+  const followingIds = new Set(following.map((f) => f.userId));
+  const followingVideos = allVideos
+    .filter((v) => followingIds.has(v.userId))
+    .map(mapApiVideo);
+
+  const followMutation = useMutation({
+    mutationFn: ({
+      userId,
+      isFollowing,
+    }: {
+      userId: string;
+      isFollowing: boolean;
+    }) =>
+      isFollowing
+        ? api.users.unfollow(userId)
+        : api.users.follow(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['following'] });
+    },
+  });
+
+  const storyUsers = following.slice(0, 8);
+
   return (
     <div className="p-4 space-y-4">
-      {/* Stories-style row of followed creators */}
-      <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
-        {[
-        ...FOLLOWING_VIDEOS.map((v) => v.user),
-        ...SUGGESTED_USERS.slice(0, 2).map((s) => s.user)].
-        map((user) =>
-        <div
-          key={user.id}
-          className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group">
-          
-            <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary via-secondary to-accent group-hover:scale-105 transition-transform duration-300">
-              <div className="p-0.5 bg-background rounded-full">
-                <UserAvatar src={user.avatar} name={user.name} size="lg" />
+      {storyUsers.length > 0 && (
+        <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
+          {storyUsers.map((user) => (
+            <div
+              key={user.userId}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group">
+              <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary via-secondary to-accent group-hover:scale-105 transition-transform duration-300">
+                <div className="p-0.5 bg-background rounded-full">
+                  <UserAvatar
+                    src={user.avatar || undefined}
+                    name={user.name}
+                    size="lg"
+                  />
+                </div>
               </div>
+              <span className="text-[11px] font-bold text-text-primary w-16 text-center truncate">
+                {user.name.split(' ')[0]}
+              </span>
             </div>
-            <span className="text-[11px] font-bold text-text-primary w-16 text-center truncate">
-              {user.name.split(' ')[0]}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Following Videos */}
-      {FOLLOWING_VIDEOS.map((video) =>
-      <VideoCard key={video.id} video={video} />
+          ))}
+        </div>
       )}
 
-      {/* Suggested People to Follow */}
+      {followingVideos.length === 0 ? (
+        <div className="text-center py-12 bg-surface rounded-3xl border border-border">
+          <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-3">
+            <UsersIcon className="w-8 h-8 text-text-secondary" />
+          </div>
+          <p className="text-sm font-bold text-text-primary">
+            No videos from people you follow yet
+          </p>
+          <p className="text-xs text-text-secondary mt-1 font-medium">
+            Follow workers below to build your feed
+          </p>
+        </div>
+      ) : (
+        followingVideos.map((video) => (
+          <FeedVideoCard key={video.id} video={video} />
+        ))
+      )}
+
       <div className="bg-surface rounded-3xl border border-border p-5 mt-2 shadow-card">
         <div className="flex items-center gap-2 mb-5">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -527,34 +575,44 @@ function FollowingFeed() {
           Follow skilled workers to see their latest videos and updates.
         </p>
         <div className="space-y-5">
-          {SUGGESTED_USERS.map((item) =>
-          <div key={item.user.id} className="flex items-center gap-3">
-              <UserAvatar
-              src={item.user.avatar}
-              name={item.user.name}
-              size="md"
-              verified={item.user.trustScore > 90} />
-            
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-sm text-text-primary truncate">
-                  {item.user.name}
-                </h4>
-                <p className="text-xs text-text-secondary font-medium">
-                  {item.skill} · {item.user.location}
-                </p>
-              </div>
-              <button
-              onClick={() => toggleFollow(item.user.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold min-h-[40px] transition-all duration-200 active:scale-95 ${followedUsers.includes(item.user.id) ? 'bg-surface border border-border text-text-secondary' : 'bg-primary text-white shadow-md shadow-primary/20'}`}>
-              
-                {followedUsers.includes(item.user.id) ? 'Following' : 'Follow'}
-              </button>
-            </div>
-          )}
+          {suggestedUsers
+            .filter((u) => u.id !== me?.id && !followingIds.has(u.id))
+            .slice(0, 5)
+            .map((user) => {
+              const isFollowing = followingIds.has(user.id);
+              return (
+                <div key={user.id} className="flex items-center gap-3">
+                  <UserAvatar
+                    src={user.avatar}
+                    name={user.name}
+                    size="md"
+                    verified={user.trustScore > 90}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm text-text-primary truncate">
+                      {user.name}
+                    </h4>
+                    <p className="text-xs text-text-secondary font-medium">
+                      {user.skills[0]?.name || 'Skilled worker'} ·{' '}
+                      {user.location}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      followMutation.mutate({
+                        userId: user.id,
+                        isFollowing,
+                      })
+                    }
+                    className={`px-4 py-2 rounded-xl text-sm font-bold min-h-[40px] transition-all duration-200 active:scale-95 ${isFollowing ? 'bg-surface border border-border text-text-secondary' : 'bg-primary text-white shadow-md shadow-primary/20'}`}>
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+              );
+            })}
         </div>
       </div>
 
-      {/* End of feed message */}
       <div className="text-center py-10">
         <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-border">
           <span className="text-2xl">🎉</span>
@@ -566,8 +624,8 @@ function FollowingFeed() {
           Follow more people to see more content
         </p>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 // ── Trending Tab Component ──
 function TrendingFeed({ onChallenges }: {onChallenges: () => void;}) {
@@ -815,8 +873,7 @@ export function HomeFeed({
     })),
   ];
 
-  const feedVideos =
-    apiVideos.length > 0 ? apiVideos.map(mapApiVideo) : FOR_YOU_VIDEOS;
+  const feedVideos = apiVideos.map(mapApiVideo);
 
   const isLoading = videosLoading && apiVideos.length === 0;
 
@@ -975,7 +1032,7 @@ export function HomeFeed({
                   <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
                     Solar
                   </p>
-                  <p className="text-xs font-black text-success">₦85k/job</p>
+                  <p className="text-xs font-black text-success">R85k/job</p>
                 </div>
               </div>
               <div className="bg-surface border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm flex-shrink-0">
@@ -984,7 +1041,7 @@ export function HomeFeed({
                   <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
                     Wiring
                   </p>
-                  <p className="text-xs font-black text-success">₦45k/job</p>
+                  <p className="text-xs font-black text-success">R45k/job</p>
                 </div>
               </div>
               <div className="bg-surface border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm flex-shrink-0">
@@ -994,14 +1051,25 @@ export function HomeFeed({
                     Plumbing
                   </p>
                   <p className="text-xs font-black text-text-primary">
-                    ₦30k/job
+                    R30k/job
                   </p>
                 </div>
               </div>
             </div>
 
-            {feedVideos.map((video) =>
-            <VideoCard key={video.id} video={video} onDuet={onDuet} />
+            {feedVideos.length === 0 ? (
+              <div className="text-center py-16 bg-surface rounded-3xl border border-border">
+                <p className="text-sm font-bold text-text-primary">
+                  No videos yet
+                </p>
+                <p className="text-xs text-text-secondary mt-1 font-medium">
+                  Be the first to upload a skill video
+                </p>
+              </div>
+            ) : (
+              feedVideos.map((video) => (
+                <FeedVideoCard key={video.id} video={video} onDuet={onDuet} />
+              ))
             )}
           </div>);
 

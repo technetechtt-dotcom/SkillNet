@@ -10,6 +10,7 @@ import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serialize.js';
 import { timeAgo } from '../utils/format.js';
 import { broadcastChatMessage } from '../ws.js';
+import { param } from '../utils/params.js';
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 
 router.get('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const chatId = req.params.id;
+    const chatId = param(req, 'id');
     const msgs = await db
       .select()
       .from(messages)
@@ -113,7 +114,7 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
     const [msg] = await db
       .insert(messages)
       .values({
-        chatId: req.params.id,
+        chatId: param(req, 'id'),
         senderId: req.userId!,
         text: text.trim(),
         imageUrl: imageUrl || null,
@@ -123,7 +124,7 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
     const participants = await db
       .select()
       .from(chatParticipants)
-      .where(eq(chatParticipants.chatId, req.params.id));
+      .where(eq(chatParticipants.chatId, param(req, 'id')));
 
     const payload = {
       id: msg.id,
@@ -135,7 +136,7 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
     };
 
     broadcastChatMessage(
-      req.params.id,
+      param(req, 'id'),
       participants.map((p) => p.userId),
       payload
     );

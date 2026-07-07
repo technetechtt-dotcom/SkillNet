@@ -28,6 +28,24 @@ async function seed() {
 
   const passwordHash = await hashPassword('password123');
 
+  const [admin] = await db
+    .insert(schema.users)
+    .values({
+      phone: '+27800000001',
+      passwordHash,
+      name: 'SkillNet Admin',
+      location: 'Johannesburg, South Africa',
+      role: 'admin',
+      trustScore: 100,
+    })
+    .returning();
+
+  await db.insert(schema.wallets).values({
+    userId: admin.id,
+    balance: 0,
+    currency: 'ZAR',
+  });
+
   const [employer1] = await db
     .insert(schema.users)
     .values({
@@ -448,9 +466,59 @@ async function seed() {
     { challengeId: ch3.id, userId: worker1.id },
   ]);
 
+  await db.insert(schema.programs).values([
+    {
+      slug: 'grants',
+      title: 'Grants & Funding',
+      type: 'grant',
+      provider: 'National Empowerment Fund',
+      description: 'Access funding for small businesses and skills development across South Africa.',
+      fundingAmount: 'Up to R 500,000',
+      status: 'active',
+      featured: true,
+    },
+    {
+      slug: 'seta',
+      title: 'SETA Learnerships',
+      type: 'learnership',
+      provider: 'merSETA / CETA / MICT SETA',
+      description: 'Accredited learnership programs with monthly stipends and NQF qualifications.',
+      location: 'Nationwide',
+      duration: '12–18 months',
+      stipend: 'R 3,800–5,000/month',
+      status: 'active',
+      featured: true,
+    },
+    {
+      slug: 'youth',
+      title: 'Youth Employment Service',
+      type: 'training',
+      provider: 'YES4Youth',
+      description: '12-month work experience placements for unemployed youth aged 18–35.',
+      location: 'Nationwide',
+      duration: '12 months',
+      stipend: 'National Minimum Wage',
+      spots: 500,
+      status: 'active',
+      featured: false,
+    },
+    {
+      slug: 'epwp',
+      title: 'EPWP Infrastructure',
+      type: 'training',
+      provider: 'Department of Public Works',
+      description: 'Expanded Public Works Programme for infrastructure maintenance and community projects.',
+      location: 'All provinces',
+      duration: '6–12 months',
+      status: 'active',
+      featured: false,
+    },
+  ]);
+
   console.log('Seed complete!');
   console.log('');
   console.log('Demo accounts (password: password123):');
+  console.log('  Admin:    +27800000001 (SkillNet Admin) → /admin');
   console.log('  Worker:   +27821234567 (Sipho Ndlovu)');
   console.log('  Employer: +27831112233 (BuildRight SA)');
   console.log('  Employer: +27721234567 (Lerato Mokoena)');
