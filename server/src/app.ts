@@ -1,7 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import jobRoutes from './routes/jobs.js';
@@ -82,6 +85,20 @@ export function createApp() {
   app.use('/api/admin', adminRoutes);
   app.use('/api/admin', adminModerationRoutes);
   app.use('/api/programs', programRoutes);
+
+  const distPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../../dist'
+  );
+  const serveFrontend =
+    isProduction && fs.existsSync(path.join(distPath, 'index.html'));
+
+  if (serveFrontend) {
+    app.use(express.static(distPath));
+    app.get(/^(?!\/api).*/, (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });

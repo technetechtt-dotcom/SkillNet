@@ -109,30 +109,52 @@ In development, OTP codes are printed to the API console. Set `SMS_WEBHOOK_URL` 
 
 ## Deployment
 
-### API (Docker / Render / Railway)
+Split deploy: **Vercel** (frontend) + **Render** (API).
 
-1. Set production env vars: `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL`, `NODE_ENV=production`
-2. Optional: `PAYSTACK_SECRET_KEY`, Cloudinary vars for uploads
-3. Build and run:
+### 1. API on Render
+
+1. Connect the GitHub repo at [render.com](https://render.com)
+2. Use the included `render.yaml`, or create a Web Service with:
+   - **Build:** `npm ci && npm run build:server`
+   - **Start:** `node server/dist/index.js`
+3. Set env vars:
+   - `DATABASE_URL` — your Neon connection string
+   - `JWT_SECRET` — long random string
+   - `NODE_ENV=production`
+   - `CLIENT_URL` — your Vercel app URL (e.g. `https://skillnet.vercel.app`)
+
+### 2. Frontend on Vercel
+
+1. Import the repo at [vercel.com](https://vercel.com)
+2. Vercel auto-detects Vite via `vercel.json`
+3. Add **Environment Variables** (Production):
+
+| Variable | Example |
+|----------|---------|
+| `VITE_API_URL` | `https://skillnet-api.onrender.com/api` |
+| `VITE_WS_URL` | `wss://skillnet-api.onrender.com/ws` |
+
+4. Deploy — Vercel builds `dist/` and serves the SPA
+
+### Docker (optional, all-in-one)
+
+For a single container that serves both app and API locally or on any host:
 
 ```bash
-npm ci
-npm run build:server
-node server/dist/index.js
+docker build -t skillnet .
+docker run -p 3001:3001 \
+  -e DATABASE_URL=... \
+  -e JWT_SECRET=... \
+  -e NODE_ENV=production \
+  -e CLIENT_URL=http://localhost:3001 \
+  skillnet
 ```
-
-Or use the included `Dockerfile` / `render.yaml`.
 
 **Notes:**
 - `POST /api/wallet/add` is disabled in production (use Paystack top-up)
 - `JWT_SECRET` is required when `NODE_ENV=production`
-- Set `CLIENT_URL` to your frontend origin (comma-separated for multiple)
-
-### Frontend (Vercel / Netlify)
-
-1. `npm run build` → deploy `dist/`
-2. Point `VITE_API_URL` at your API, or configure proxy rewrites in `vercel.json`
-3. Set `VITE_WS_URL` for WebSocket if not on same host
+- Set Render `CLIENT_URL` to your Vercel domain so CORS allows the frontend
+- Run `npm run db:push` after deploy if the schema changed
 
 ## Admin Dashboard
 
