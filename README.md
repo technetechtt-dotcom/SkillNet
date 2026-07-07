@@ -91,6 +91,21 @@ Sign in with country code **+27** (South Africa). Example: select +27 and enter 
 | `npm run db:push` | Push schema to Neon |
 | `npm run db:seed` | Seed demo data |
 | `npm run db:ensure-admin` | Create admin user + default programs |
+| `npm test` | Run unit and API tests |
+
+## Phone OTP Login
+
+Passwordless sign-in via SMS code:
+
+```bash
+POST /api/auth/otp/send      { "phone": "+27821234567", "purpose": "login" }
+POST /api/auth/otp/login     { "phone": "+27821234567", "code": "123456" }
+POST /api/auth/otp/register  { "phone": "+27...", "code": "123456", "name": "...", "password": "..." }
+```
+
+In development, OTP codes are printed to the API console. Set `SMS_WEBHOOK_URL` to deliver codes via your SMS provider in production.
+
+**Password policy:** minimum 8 characters, at least one letter and one number.
 
 ## Deployment
 

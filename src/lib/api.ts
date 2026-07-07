@@ -499,6 +499,31 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    sendOtp: (phone: string, purpose: 'login' | 'register' = 'login') =>
+      request<{ success: boolean; message: string; expiresAt: string }>(
+        '/auth/otp/send',
+        {
+          method: 'POST',
+          body: JSON.stringify({ phone, purpose }),
+        }
+      ),
+    loginWithOtp: (phone: string, code: string) =>
+      request<{ token: string; user: ApiUser }>('/auth/otp/login', {
+        method: 'POST',
+        body: JSON.stringify({ phone, code }),
+      }),
+    registerWithOtp: (data: {
+      phone: string;
+      code: string;
+      password: string;
+      name: string;
+      location?: string;
+      skills?: { name: string; icon?: string; level?: string }[];
+    }) =>
+      request<{ token: string; user: ApiUser }>('/auth/otp/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   users: {

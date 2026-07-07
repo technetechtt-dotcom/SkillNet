@@ -336,6 +336,16 @@ export const programs = pgTable('programs', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const phoneOtps = pgTable('phone_otps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  phone: varchar('phone', { length: 20 }).notNull(),
+  code: varchar('code', { length: 6 }).notNull(),
+  purpose: varchar('purpose', { length: 20 }).notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  attempts: integer('attempts').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type Program = typeof programs.$inferSelect;
