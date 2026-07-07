@@ -1,0 +1,6 @@
+server/
+Dockerfile
+render.yaml
+*.md
+.env
+.env.*

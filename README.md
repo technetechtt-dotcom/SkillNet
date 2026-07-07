@@ -109,32 +109,47 @@ In development, OTP codes are printed to the API console. Set `SMS_WEBHOOK_URL` 
 
 ## Deployment
 
-Split deploy: **Vercel** (frontend) + **Render** (API).
+**Frontend → Vercel** · **API → Render** (recommended)
 
-### 1. API on Render
+### Step 1 — API on Render
 
-1. Connect the GitHub repo at [render.com](https://render.com)
-2. Use the included `render.yaml`, or create a Web Service with:
-   - **Build:** `npm ci && npm run build:server`
-   - **Start:** `node server/dist/index.js`
-3. Set env vars:
-   - `DATABASE_URL` — your Neon connection string
+1. [render.com](https://render.com) → **New Blueprint** → connect this repo
+2. Uses `render.yaml` automatically
+3. Set secrets:
+   - `DATABASE_URL` — Neon PostgreSQL URL
    - `JWT_SECRET` — long random string
    - `NODE_ENV=production`
-   - `CLIENT_URL` — your Vercel app URL (e.g. `https://skillnet.vercel.app`)
+   - `CLIENT_URL` — your Vercel URL (set after Step 2)
 
-### 2. Frontend on Vercel
+Note the Render URL, e.g. `https://skillnet-api.onrender.com`
 
-1. Import the repo at [vercel.com](https://vercel.com)
-2. Vercel auto-detects Vite via `vercel.json`
+### Step 2 — Frontend on Vercel
+
+1. [vercel.com/new](https://vercel.com/new) → import this repo
+2. Settings are read from `vercel.json` automatically
 3. Add **Environment Variables** (Production):
 
-| Variable | Example |
-|----------|---------|
-| `VITE_API_URL` | `https://skillnet-api.onrender.com/api` |
-| `VITE_WS_URL` | `wss://skillnet-api.onrender.com/ws` |
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `API_PROXY_URL` | `https://skillnet-api.onrender.com` | Server-side proxy to Render (no `/api` suffix) |
+| `VITE_API_URL` | `/api` | Same-origin API via Vercel proxy |
+| `VITE_WS_URL` | `wss://skillnet-api.onrender.com/ws` | WebSockets connect directly to Render |
 
-4. Deploy — Vercel builds `dist/` and serves the SPA
+4. Deploy
+
+### Step 3 — Link CORS
+
+On Render, set `CLIENT_URL` to your Vercel URL and redeploy:
+```
+CLIENT_URL=https://your-app.vercel.app
+```
+
+### Verify
+
+- `https://your-app.vercel.app` — app loads
+- `https://your-app.vercel.app/api/health` — proxied health check
+- Sign in: `+27821234567` / `password123`
+- Admin: `/admin` with `+27800000001` / `password123`
 
 ### Docker (optional, all-in-one)
 
