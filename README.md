@@ -109,51 +109,48 @@ In development, OTP codes are printed to the API console. Set `SMS_WEBHOOK_URL` 
 
 ## Deployment
 
-**Frontend → Vercel** · **API → Render** (recommended)
+**Render** (app + API) · **Neon** (database)
 
-### Step 1 — API on Render
+One Render service serves the React app and Express API on the same URL. Neon holds PostgreSQL.
+
+### 1. Neon database
+
+1. Create a project at [neon.tech](https://neon.tech)
+2. Copy the connection string (with `?sslmode=require`)
+
+### 2. Render
 
 1. [render.com](https://render.com) → **New Blueprint** → connect this repo
 2. Uses `render.yaml` automatically
-3. Set secrets:
-   - `DATABASE_URL` — Neon PostgreSQL URL
-   - `JWT_SECRET` — long random string
-   - `NODE_ENV=production`
-   - `CLIENT_URL` — your Vercel URL (set after Step 2)
+3. Set these env vars when prompted:
 
-Note the Render URL, e.g. `https://skillnet-api.onrender.com`
+| Variable | Value |
+|----------|--------|
+| `DATABASE_URL` | Your Neon connection string |
+| `JWT_SECRET` | Long random string (48+ chars) |
+| `CLIENT_URL` | Your Render URL, e.g. `https://skillnet.onrender.com` |
 
-### Step 2 — Frontend on Vercel
+`NODE_ENV=production` is set automatically.
 
-1. [vercel.com/new](https://vercel.com/new) → import this repo
-2. Settings are read from `vercel.json` automatically
-3. Add **Environment Variables** (Production):
+4. After first deploy, push schema and seed from your machine:
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `API_PROXY_URL` | `https://skillnet-api.onrender.com` | Server-side proxy to Render (no `/api` suffix) |
-| `VITE_API_URL` | `/api` | Same-origin API via Vercel proxy |
-| `VITE_WS_URL` | `wss://skillnet-api.onrender.com/ws` | WebSockets connect directly to Render |
-
-4. Deploy
-
-### Step 3 — Link CORS
-
-On Render, set `CLIENT_URL` to your Vercel URL and redeploy:
-```
-CLIENT_URL=https://your-app.vercel.app
+```bash
+# Use the same DATABASE_URL in a local .env file
+npm run db:push
+npm run db:seed
+npm run db:ensure-admin
 ```
 
 ### Verify
 
-- `https://your-app.vercel.app` — app loads
-- `https://your-app.vercel.app/api/health` — proxied health check
+- `https://your-app.onrender.com` — app loads
+- `https://your-app.onrender.com/api/health` — `{"status":"ok"}`
 - Sign in: `+27821234567` / `password123`
 - Admin: `/admin` with `+27800000001` / `password123`
 
-### Docker (optional, all-in-one)
+WebSockets use the same host at `/ws` — no extra config.
 
-For a single container that serves both app and API locally or on any host:
+### Docker (optional)
 
 ```bash
 docker build -t skillnet .
@@ -166,10 +163,8 @@ docker run -p 3001:3001 \
 ```
 
 **Notes:**
-- `POST /api/wallet/add` is disabled in production (use Paystack top-up)
-- `JWT_SECRET` is required when `NODE_ENV=production`
-- Set Render `CLIENT_URL` to your Vercel domain so CORS allows the frontend
-- Run `npm run db:push` after deploy if the schema changed
+- `POST /api/wallet/add` is disabled in production (use Paystack when configured)
+- Paystack and Cloudinary env vars are optional
 
 ## Admin Dashboard
 
