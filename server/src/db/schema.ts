@@ -71,6 +71,7 @@ export const jobs = pgTable('jobs', {
   paymentType: varchar('payment_type', { length: 20 }).notNull(),
   requiredSkills: jsonb('required_skills').$type<string[]>().default([]).notNull(),
   isUrgent: boolean('is_urgent').default(false).notNull(),
+  status: varchar('status', { length: 20 }).default('open').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -346,6 +347,21 @@ export const phoneOtps = pgTable('phone_otps', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const reviews = pgTable('reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  reviewerId: uuid('reviewer_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  revieweeId: uuid('reviewee_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type Program = typeof programs.$inferSelect;
+export type Review = typeof reviews.$inferSelect;

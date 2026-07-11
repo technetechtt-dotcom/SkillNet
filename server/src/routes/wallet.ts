@@ -6,7 +6,10 @@ import { AuthRequest, requireAuth } from '../middleware/auth.js';
 import { formatPayment, timeAgo } from '../utils/format.js';
 import {
   initializePayment,
+  initiateTransfer,
+  createTransferRecipient,
   isPaystackConfigured,
+  listBanks,
   verifyPayment,
 } from '../utils/paystack.js';
 import { broadcastToUsers } from '../ws.js';
@@ -18,6 +21,16 @@ async function getWallet(userId: string) {
   const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
   return wallet;
 }
+
+router.get('/banks', requireAuth, async (_req, res) => {
+  try {
+    const result = await listBanks();
+    res.json(result);
+  } catch (err) {
+    console.error('List banks error:', err);
+    res.status(500).json({ error: 'Failed to list banks' });
+  }
+});
 
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
@@ -376,11 +389,29 @@ router.post('/send', requireAuth, async (req: AuthRequest, res) => {
 
 router.post('/withdraw', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { amount, bankName, accountNumber } = req.body;
+    const {
+      amount,
+      bankName,
+      accountNumber,
+      bankCode,
+      accountName,
+    } = req.body;
     const numAmount = Number(amount);
 
     if (!numAmount || numAmount <= 0) {
       res.status(400).json({ error: 'Invalid amount' });
+      return;
+    }
+
+    if (!accountNumber || String(accountNumber).length < 6) {
+      res.status(400).json({ error: 'Valid account number is required' });
+      return;
+    }
+
+    if (!bankCode) {
+      res.status(400).json({
+        error: 'bankCode is required (use GET /api/wallet/banks for codes)',
+      });
       return;
     }
 
@@ -395,28 +426,71 @@ router.post('/withdraw', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
+    const [user] = await db.select().from(users).where(eq(users.id, req.userId!));
+    const reference = `WTH-${Date.now()}-${req.userId!.slice(0, 8)}`;
+    const name = accountName || user?.name || 'SkillNet User';
+
+    const recipient = await createTransferRecipient({
+      name,
+      accountNumber: String(accountNumber),
+      bankCode: String(bankCode),
+    });
+
+    const transfer = await initiateTransfer({
+      amount: numAmount,
+      recipientCode: recipient.recipientCode,
+      reference,
+      reason: `SkillNet withdrawal to ${bankName || 'bank'}`,
+    });
+
+    const transferOk =
+      transfer.devMode ||
+      transfer.status === 'success' ||
+      transfer.status === 'pending' ||
+      transfer.status === 'otp';
+
+    if (!transferOk) {
+      res.status(502).json({ error: 'Bank transfer failed. Funds were not deducted.' });
+      return;
+    }
+
     const newBalance = wallet.balance - numAmount;
     await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, wallet.id));
+
+    const txStatus =
+      transfer.devMode || transfer.status === 'success' ? 'completed' : 'pending';
 
     await db.insert(transactions).values({
       walletId: wallet.id,
       type: 'withdrawal',
       amount: numAmount,
-      description: `Withdrawal to ${bankName || 'bank'} ••••${accountNumber?.slice(-4) || '****'}`,
-      status: 'pending',
-      reference: `WTH-${Date.now()}`,
+      description: `Withdrawal to ${bankName || 'bank'} ••••${String(accountNumber).slice(-4)}`,
+      status: txStatus,
+      reference,
       metadata: {
-        bankDetails: `${bankName || 'Bank'} **** ${accountNumber?.slice(-4) || '****'}`,
+        bankDetails: `${bankName || 'Bank'} **** ${String(accountNumber).slice(-4)}`,
+        bankCode: String(bankCode),
+        recipientCode: recipient.recipientCode,
+        transferCode: transfer.transferCode,
+        paystackStatus: transfer.status,
+        devMode: String(transfer.devMode),
       },
     });
 
     res.json({
       balance: newBalance,
       formattedBalance: formatPayment(newBalance, wallet.currency),
+      status: txStatus,
+      reference,
+      transferCode: transfer.transferCode,
+      paystackConfigured: isPaystackConfigured(),
+      devMode: transfer.devMode,
     });
   } catch (err) {
     console.error('Withdraw error:', err);
-    res.status(500).json({ error: 'Failed to withdraw' });
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to withdraw',
+    });
   }
 });
 

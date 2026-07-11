@@ -3,6 +3,7 @@ import { and, desc, eq, gt } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { phoneOtps } from '../db/schema.js';
 import { isProduction } from './env.js';
+import { sendSms } from './sms.js';
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -26,20 +27,14 @@ export async function createPhoneOtp(phone: string, purpose: 'login' | 'register
     console.log(`[OTP] ${phone} (${purpose}): ${code}`);
   }
 
-  // Hook for SMS provider integration (Twilio, Africa's Talking, etc.)
-  if (process.env.SMS_WEBHOOK_URL) {
-    try {
-      await fetch(process.env.SMS_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, code, purpose }),
-      });
-    } catch (err) {
-      console.error('SMS webhook failed:', err);
-    }
+  const message = `Your SkillNet verification code is ${code}. It expires in 10 minutes.`;
+  const sms = await sendSms(phone, message);
+
+  if (!sms.sent && isProduction && process.env.OTP_DEBUG !== 'true') {
+    console.error(`OTP SMS failed via ${sms.provider}:`, sms.error);
   }
 
-  return { expiresAt };
+  return { expiresAt, smsSent: sms.sent, smsProvider: sms.provider };
 }
 
 export async function verifyPhoneOtp(

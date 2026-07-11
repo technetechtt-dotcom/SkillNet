@@ -165,6 +165,16 @@ docker run -p 3001:3001 \
 **Notes:**
 - `POST /api/wallet/add` is disabled in production (use Paystack when configured)
 - Paystack and Cloudinary env vars are optional
+- SMS OTP uses Africa's Talking (`AT_*`) or `SMS_WEBHOOK_URL`; otherwise codes log to console in development
+
+## API highlights (recent)
+
+| Feature | Endpoints |
+|---------|-----------|
+| Job applications | `GET /jobs/mine`, `/jobs/applications/mine`, `/jobs/:id/applications`, `PATCH /jobs/applications/:id` |
+| Reviews | `POST /reviews`, `GET /reviews/user/:userId` |
+| Withdrawals | `GET /wallet/banks`, `POST /wallet/withdraw` (Paystack Transfer) |
+| OTP SMS | `POST /auth/otp/send` via Africa's Talking or webhook |
 
 ## Admin Dashboard
 

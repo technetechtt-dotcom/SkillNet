@@ -21,6 +21,7 @@ import followRoutes from './routes/follows.js';
 import adminRoutes from './routes/admin.js';
 import adminModerationRoutes from './routes/adminModeration.js';
 import programRoutes from './routes/programs.js';
+import reviewRoutes from './routes/reviews.js';
 import { isProduction, requireProductionEnv } from './utils/env.js';
 import { captureException } from './utils/sentry.js';
 
@@ -85,6 +86,7 @@ export function createApp() {
   app.use('/api/admin', adminRoutes);
   app.use('/api/admin', adminModerationRoutes);
   app.use('/api/programs', programRoutes);
+  app.use('/api/reviews', reviewRoutes);
 
   const distPath = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),

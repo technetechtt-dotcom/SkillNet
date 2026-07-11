@@ -84,6 +84,29 @@ export interface ApiJob {
   postedTime: string;
   applicants: number;
   isUrgent?: boolean;
+  status?: 'open' | 'filled' | 'closed';
+}
+
+export interface ApiJobApplication {
+  id: string;
+  jobId: string;
+  jobTitle: string | null;
+  applicantId: string;
+  applicant: ApiUser | null;
+  message: string | null;
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  createdAt: string;
+  postedTime: string;
+}
+
+export interface ApiReview {
+  id: string;
+  rating: number;
+  comment: string | null;
+  jobId: string | null;
+  reviewer: ApiUser | null;
+  createdAt: string;
+  time: string;
 }
 
 export interface ApiVideo {
@@ -565,7 +588,21 @@ export const api = {
       return request<ApiJob[]>(`/jobs${qs ? `?${qs}` : ''}`);
     },
     get: (id: string) => request<ApiJob>(`/jobs/${id}`),
+    mine: () => request<ApiJob[]>('/jobs/mine'),
     saved: () => request<ApiJob[]>('/jobs/saved'),
+    myApplications: () => request<ApiJobApplication[]>('/jobs/applications/mine'),
+    applications: (jobId: string) =>
+      request<ApiJobApplication[]>(`/jobs/${jobId}/applications`),
+    updateApplication: (applicationId: string, status: 'accepted' | 'rejected') =>
+      request<ApiJobApplication>(`/jobs/applications/${applicationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+    updateStatus: (id: string, status: 'open' | 'filled' | 'closed') =>
+      request<ApiJob>(`/jobs/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
     create: (data: {
       title: string;
       description: string;
@@ -581,7 +618,7 @@ export const api = {
         body: JSON.stringify(data),
       }),
     apply: (id: string, message?: string) =>
-      request<{ success: boolean }>(`/jobs/${id}/apply`, {
+      request<ApiJobApplication>(`/jobs/${id}/apply`, {
         method: 'POST',
         body: JSON.stringify({ message }),
       }),
@@ -589,6 +626,28 @@ export const api = {
       request<{ success: boolean }>(`/jobs/${id}/save`, { method: 'POST' }),
     unsave: (id: string) =>
       request<{ success: boolean }>(`/jobs/${id}/save`, { method: 'DELETE' }),
+  },
+
+  reviews: {
+    create: (data: {
+      revieweeId: string;
+      jobId?: string;
+      rating: number;
+      comment?: string;
+    }) =>
+      request<{
+        id: string;
+        rating: number;
+        revieweeRating: number;
+        reviewCount: number;
+      }>('/reviews', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    forUser: (userId: string) =>
+      request<{ average: number; count: number; reviews: ApiReview[] }>(
+        `/reviews/user/${userId}`
+      ),
   },
 
   videos: {
@@ -685,11 +744,35 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ amount, recipientPhone, description }),
       }),
-    withdraw: (amount: number, bankName: string, accountNumber: string) =>
-      request<{ balance: number; formattedBalance: string }>('/wallet/withdraw', {
+    withdraw: (
+      amount: number,
+      bankName: string,
+      accountNumber: string,
+      bankCode: string,
+      accountName?: string
+    ) =>
+      request<{
+        balance: number;
+        formattedBalance: string;
+        status: string;
+        reference: string;
+        paystackConfigured: boolean;
+        devMode: boolean;
+      }>('/wallet/withdraw', {
         method: 'POST',
-        body: JSON.stringify({ amount, bankName, accountNumber }),
+        body: JSON.stringify({
+          amount,
+          bankName,
+          accountNumber,
+          bankCode,
+          accountName,
+        }),
       }),
+    banks: () =>
+      request<{
+        banks: { name: string; code: string; slug: string }[];
+        devMode: boolean;
+      }>('/wallet/banks'),
   },
 
   chats: {
